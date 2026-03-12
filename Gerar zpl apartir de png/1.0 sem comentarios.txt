@@ -1,0 +1,40 @@
+from PIL import Image
+
+def image_to_zpl(image_path, offset_x=0, offset_y=0):
+    image = Image.open(image_path).convert('1')
+    # Desloca os pixels da imagem
+    if offset_x != 0 or offset_y != 0:
+        image = image.transform(image.size, Image.AFFINE, (1, 0, offset_x, 0, 1, offset_y))
+    width, height = image.size
+
+    # Verifica se a largura da imagem é um múltiplo de 8
+    if width % 8 != 0:
+        # Reduz as proporções da imagem até que a largura seja um múltiplo de 8
+        while width % 8 != 0:
+            width -= 1
+            height -= 1
+        image = image.resize((width, height))
+
+    # Cria uma lista vazia chamada `data` para armazenar os dados da imagem
+    data = []
+    for y in range(height):
+        row = []
+        for x in range(width):
+            row.append('1' if image.getpixel((x, y)) == 0 else '0')
+        data.append(''.join(row))
+    hex_data = ''.join(['{:X}'.format(int(x, 2)) for x in data])
+    zpl = "^XA^FO50,50^GFA,{},{},{},{}^FS^XZ".format(len(hex_data), len(hex_data) // 2, width // 8, hex_data)
+    return zpl
+
+# Define a função `altera_8_para_0` que recebe como parâmetro um código ZPL
+def altera_8_para_0(codigo_zpl):
+    codigo_zpl = list(codigo_zpl)
+    
+    for i in range(0, len(codigo_zpl), 1):
+        if codigo_zpl[i] == '8':
+            codigo_zpl[i] = '0'
+    return ''.join(codigo_zpl)
+
+zpl_code = image_to_zpl('OIP.jpg', offset_x=-1, offset_y=0)
+zpl_code_atualizado = altera_8_para_0(zpl_code)
+print(zpl_code_atualizado)

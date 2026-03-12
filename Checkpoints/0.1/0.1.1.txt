@@ -1,0 +1,40 @@
+import tkinter as tk
+from PIL import ImageTk, Image
+import requests
+from io import BytesIO
+import zpl
+
+def update_preview():
+    # Obtém o código ZPL do campo de texto
+    zpl_code = text_input.get("1.0", tk.END)
+
+    # Gera a imagem da etiqueta usando o serviço Labelary
+    url = 'http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/'
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    response = requests.post(url, headers=headers, data=zpl_code.encode())
+    image_data = response.content
+
+    # Atualiza a imagem no canvas
+    image = Image.open(BytesIO(image_data))
+    photo = ImageTk.PhotoImage(image)
+    canvas.create_image(0, 0, image=photo, anchor=tk.NW)
+    canvas.image = photo
+
+# Cria a janela principal
+root = tk.Tk()
+root.title("Visualizador de Etiquetas ZPL")
+
+# Cria o campo de texto para entrada de código ZPL
+text_input = tk.Text(root, height=30, width=45)
+text_input.pack()
+
+# Cria o botão para atualizar a visualização da etiqueta
+update_button = tk.Button(root, text="Atualizar", command=update_preview)
+update_button.pack()
+
+# Cria o canvas para exibir a imagem da etiqueta
+canvas = tk.Canvas(root, width=700, height=400)
+canvas.pack()
+
+# Inicia o loop principal da janela
+root.mainloop()

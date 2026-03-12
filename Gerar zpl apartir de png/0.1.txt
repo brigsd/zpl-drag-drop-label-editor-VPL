@@ -1,0 +1,12 @@
+from PIL import Image
+
+def image_to_zpl(image_path):
+    image = Image.open(image_path).convert('1')
+    width, height = image.size
+    data = image.tobytes()
+    hex_data = ''.join(['{:02X}'.format(x) for x in data])
+    zpl = "^XA^FO0,0^GFA,{},{},{},{}^FS^XZ".format(len(hex_data), len(hex_data) // 2, width // 8, hex_data)
+    return zpl
+
+zpl_code = image_to_zpl('barcode.png')
+print(zpl_code)

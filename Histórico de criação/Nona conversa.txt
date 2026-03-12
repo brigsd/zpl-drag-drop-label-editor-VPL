@@ -1,0 +1,1297 @@
+Powered by AI
+Bing
+Claro! Aqui está uma versão revisada da função importar_imagem que deve permitir que você importe uma imagem e arraste-a pelo canvas:
+def importar_imagem():
+    file_path = filedialog.askopenfilename(filetypes=[("Imagens PNG", "*.png")])
+if file_path:
+try:
+# Abre a imagem usando a biblioteca PIL
+            imagem = Image.open(file_path)
+# Redimensiona a imagem para caber na área de pré-visualização
+            largura_maxima = canvas.winfo_width() - deslocamento_x - 20
+            altura_maxima = canvas.winfo_height() - deslocamento_y - 20
+            imagem.thumbnail((largura_maxima, altura_maxima))
+# Converte a imagem para o formato PhotoImage
+            imagem_preview = ImageTk.PhotoImage(imagem)
+# Exibe a imagem na área de pré-visualização
+            item_imagem = canvas.create_image(deslocamento_x + 10, deslocamento_y + 10, image=imagem_preview, anchor=tk.NW)
+            canvas.imagem_preview = imagem_preview  # Armazena a referência para evitar coleta de lixo
+except Exception as e:
+# Lida com erros ao abrir a imagem
+print("Erro ao abrir a imagem:", e)
+# Cria uma PhotoImage a partir da imagem importada
+        foto = ImageTk.PhotoImage(imagem)
+# Cria um elemento de imagem no canvas
+        item = canvas.create_image(150, 150, image=foto, anchor=tk.NW)
+        canvas.foto = foto  
+# Armazena a referência para evitar coleta de lixo
+# Vincula os eventos de arrastar ao elemento de imagem
+        canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+        canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+Essa versão da função importar_imagem é semelhante à versão anterior, mas inclui uma linha de código adicional para armazenar uma referência à PhotoImage criada a partir
+da imagem importada. Isso é necessário para evitar que a PhotoImage seja coletada pelo coletor de lixo do Python quando a função importar_imagem termina. Além disso,
+essa versão da função vincula os eventos de arrastar ao elemento de imagem criado no canvas usando as funções ao_pressionar_elemento e ao_arrastar_elemento. Isso deve
+permitir que você arraste a imagem pelo canvas. 
+ 
+ 
+Usuário
+muito bom, porém a função está importando duas imagens, uma eu consigo arrastar e a outra está estática, como faço para a função gerar somente a imagem que consigo
+arrastar?
+Bing
+A função importar_imagem que eu compartilhei anteriormente cria duas imagens: uma imagem é exibida na área de pré-visualização e a outra imagem é criada no canvas. Se
+você quiser que a função importar_imagem crie apenas a imagem que pode ser arrastada pelo canvas, você pode remover as linhas de código que criam e exibem a imagem
+na área de pré-visualização. Aqui está um exemplo de como a função importar_imagem deve ficar:
+def importar_imagem():
+    file_path = filedialog.askopenfilename(filetypes=[("Imagens PNG", "*.png")])
+if file_path:
+try:
+# Abre a imagem usando a biblioteca PIL
+            imagem = Image.open(file_path)
+# Redimensiona a imagem para caber na área de pré-visualização
+            largura_maxima = canvas.winfo_width() - deslocamento_x - 20
+            altura_maxima = canvas.winfo_height() - deslocamento_y - 20
+            imagem.thumbnail((largura_maxima, altura_maxima))
+# Converte a imagem para o formato PhotoImage
+            foto = ImageTk.PhotoImage(imagem)
+# Cria um elemento de imagem no canvas
+            item = canvas.create_image(150, 150, image=foto, anchor=tk.NW)
+            canvas.foto = foto  
+# Armazena a referência para evitar coleta de lixo
+# Vincula os eventos de arrastar ao elemento de imagem
+            canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+            canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+except Exception as e:
+# Lida com erros ao abrir a imagem
+print("Erro ao abrir a imagem:", e)
+Essa versão da função importar_imagem é semelhante à versão anterior, mas não inclui as linhas de código que criam e exibem a imagem na área de pré-visualização. Isso
+deve fazer com que a função importar_imagem crie apenas a imagem que pode ser arrastada pelo canvas. 
+ 
+ 
+Usuário
+muito bom como eu altero o tamanho dessa imagem gerada?
+Bing
+Para alterar o tamanho da imagem gerada pela função importar_imagem, você pode modificar a linha de código que redimensiona a imagem usando o método thumbnail da
+biblioteca PIL. Esse método redimensiona a imagem para que ela caiba dentro de um retângulo especificado, mantendo as proporções da imagem. Aqui está um exemplo de
+como você pode alterar o tamanho da imagem gerada:
+# Redimensiona a imagem para o tamanho desejado
+largura_desejada = 200  # Defina a largura desejada
+altura_desejada = 200  # Defina a altura desejada
+imagem.thumbnail((largura_desejada, altura_desejada))
+Nesse exemplo, a imagem é redimensionada para caber dentro de um retângulo de 200 pixels de largura por 200 pixels de altura. Você pode alterar os valores de
+largura_desejada e altura_desejada para definir o tamanho desejado para a imagem. 
+ 
+ 
+Usuário
+Agora preciso fazer com que o programa converta a imagem importada em código zpl após eu clicar em aplicar
+Bing
+Para converter uma imagem em código ZPL, você pode usar uma biblioteca ou ferramenta que faça essa conversão. Por exemplo, de acordo com um 
+post no Stack
+Overflow, é possível converter uma imagem em código ZPL usando a classe ZPLConverter. Essa classe converte uma imagem em um arquivo ZPL que pode ser impresso em
+uma impressora Zebra. Você pode usar essa classe ou outra biblioteca semelhante para converter a imagem importada em código ZPL.
+Depois de converter a imagem em código ZPL, você pode adicionar o código gerado ao seu programa e usá-lo para imprimir a imagem. Você pode fazer isso adicionando
+uma função que seja chamada quando o usuário clicar no botão “Aplicar” e que converta a imagem importada em código ZPL e insira o código gerado no campo de texto do
+seu programa. 
+ 
+ 
+Usuário
+como ficaria essa função em meu código?
+Bing
+Para converter uma imagem em código ZPL, você pode usar uma biblioteca ou ferramenta que faça essa conversão. Infelizmente, eu não tenho acesso a nenhuma biblioteca
+específica que possa fazer essa conversão diretamente no seu código. No entanto, existem várias bibliotecas e ferramentas disponíveis online que podem ajudá-lo a converter
+uma imagem em código ZPL. Você pode pesquisar por essas bibliotecas e ferramentas e escolher a que melhor atenda às suas necessidades.
+Depois de escolher uma biblioteca ou ferramenta para converter imagens em código ZPL, você pode adicionar uma função ao seu código que seja chamada quando o
+usuário clicar no botão “Aplicar”. Essa função deve usar a biblioteca ou ferramenta escolhida para converter a imagem importada em código ZPL e inserir o código gerado
+no campo de texto do seu programa. A implementação exata dessa função dependerá da biblioteca ou ferramenta escolhida para fazer a conversão. 
+ 
+ 
+Usuário
+Bing, estou criando um programa em python e preciso de seu auxilio vou compartilhar ele contigo divindo ele em partes ,assim que eu compartilhar todo ele eu te aviso:
+import tkinter as tk from tkinter import ttk import PIL from PIL import ImageTk import re import barcode from barcode.writer import ImageWriter
+Variável global para verificar se a janela foi redimensionada
+janela_redimensionada = False
+def atualizar_visualizacao(): global deslocamento_x, deslocamento_y deslocamento_x = 21 deslocamento_y = 20
+# Obtém o código ZPL do campo de texto
+codigo_zpl = entrada_texto.get("1.0", tk.END)
+# Analisa o código ZPL para extrair informações sobre os elementos
+elementos = []
+for match in re.finditer(r'\^FO(\d+),(\d+)\^A[^\^]+,(\d+),(\d+)\^FD([^\^]+)\^FS', codigo_zpl):
+    x, y, altura_fonte, largura_fonte, texto = match.groups()
+    elementos.append(('texto', int(x), int(y), int(altura_fonte), int(largura_fonte), texto))
+for match in re.finditer(r'\^FO(\d+),(\d+)\^BY[^\^]+\^B[^\^]+\^FD([^\^]+)\^FS', codigo_zpl):
+    x, y, dados = match.groups()
+    elementos.append(('codigo_barras', int(x), int(y), dados))
+# Limpa o canvas e o dicionário de códigos de barras
+for item in canvas.find_all():
+    if canvas.type(item) in ("text", "image"):
+        canvas.delete(item)
+canvas.dados_codigo_barras = {}
+# Cria objetos gráficos interativos para representar os elementos
+for elemento in elementos:
+    if elemento[0] == 'texto':
+        _, x, y, altura_fonte, largura_fonte, texto = elemento
+        fator_escala = 0.73  # Fator de escala para o tamanho da fonte
+        item = canvas.create_text(x + deslocamento_x, y + deslocamento_y, text=texto, anchor=tk.NW, font=("Calibri Bold", int(altura_fonte * fator_escala)))
+        canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+        canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+    elif elemento[0] == 'codigo_barras':
+        _, x, y, dados = elemento
+        escritor = ImageWriter()
+        escritor.dpi = 300
+        escritor.altura_modulo = 5.0
+        upca = barcode.get('upca', dados, writer=escritor)
+        imagem = upca.render()
+        imagem.thumbnail((200, 200))
+        foto = ImageTk.PhotoImage(imagem)
+        item = canvas.create_image(x + deslocamento_x, y + deslocamento_y, image=foto, anchor=tk.NW)
+        canvas.dados_codigo_barras[item] = dados
+        canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+        canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+        # Adiciona a imagem ao dicionário de imagens do canvas
+        if not hasattr(canvas, '_imagens'):
+            canvas._imagens = {}
+        canvas._imagens[item] = foto
+        print(f"Adicionando imagem ao dicionário: {item} -> {foto}")
+        # Armazena uma referência ao objeto PhotoImage para evitar que ele seja coletado pelo coletor de lixo
+        if not hasattr(canvas, '_fotos'):
+            canvas._fotos = []
+        canvas._fotos.append(foto)
+def ao_pressionar_elemento(evento): # Armazena a posição atual do elemento canvas.elemento_atual = canvas.find_withtag(“current”) canvas.x_atual = evento.x
+canvas.y_atual = evento.y
+def ao_arrastar_elemento(evento): rx1, ry1, rx2, ry2 = canvas.coords(retangulo) # Obtém o valor selecionado no elemento de seleção valor_snap = int(snap.get())
+# Calcula as novas coordenadas do elemento com base no valor selecionado no elemento de seleção
+x1, y1 = canvas.coords(canvas.elemento_atual)
+x2 = evento.x
+y2 = evento.y
+x2 = round((x2 + 1) / valor_snap) * valor_snap
+y2 = round((y2 + 1) / valor_snap) * valor_snap
+# Verifica se as travas nos eixos X e Y estão ativadas
+if trava_eixo_x.get():
+    x2 = x1
+if trava_eixo_y.get():
+    y2 = y1
+Bing
+Claro, estou aqui para ajudar! Você pode compartilhar o código comigo em partes, se preferir. Quando você tiver compartilhado tudo, me avise e farei o meu melhor para
+ajudá-lo. 
+ 
+ 
+Usuário
+Calcula o tamanho do elemento atual
+tipo_elemento = canvas.type(canvas.elemento_atual)
+if tipo_elemento == "text":
+    bbox = canvas.bbox(canvas.elemento_atual)
+    largura_elemento = bbox[2] - bbox[0]
+    altura_elemento = bbox[3] - bbox[1]
+elif tipo_elemento == "image":
+    bbox = canvas.bbox(canvas.elemento_atual)
+    largura_elemento = bbox[2] - bbox[0]
+    altura_elemento = bbox[3] - bbox[1]
+else:
+    largura_elemento = 0
+    altura_elemento = 0
+# Verifica se as novas coordenadas do elemento, mais o tamanho do elemento, estão dentro dos limites do retângulo
+if x2 < rx1:
+    x2 = rx1
+if y2 < ry1:
+    y2 = ry1
+if x2 + largura_elemento > rx2:
+    x2 = rx2 - largura_elemento
+if y2 + altura_elemento > ry2:
+    y2 = ry2 - altura_elemento
+# Move o elemento para a nova posição
+canvas.coords(canvas.elemento_atual, x2, y2)
+# Atualiza o campo informativo com as coordenadas atuais do elemento
+rotulo_coordenadas.config(text=f"x: {x2 - deslocamento_x}, y: {y2 - deslocamento_y}")
+def aplicar_mudancas(): # Obtém o código ZPL do campo de texto codigo_zpl = entrada_texto.get(“1.0”, tk.END)
+for item in canvas.find_all():
+    if canvas.type(item) == "text":
+        x, y = canvas.coords(item)
+        texto = re.escape(canvas.itemcget(item, "text"))
+        novo_x = max(0, int(x) - deslocamento_x)
+        novo_y = max(0, int(y) - deslocamento_y)
+        codigo_zpl = re.sub(rf'(\^FO)\d+,\d+(\^A[^\^]+\^FD{texto}\^FS)', rf'\g<1>{novo_x},{novo_y}\g<2>', codigo_zpl)
+    elif canvas.type(item) == "image":
+        x, y = canvas.coords(item)
+        dados = re.escape(canvas.dados_codigo_barras[item])
+        novo_x = max(0, int(x) - deslocamento_x)
+        novo_y = max(0, int(y) - deslocamento_y)
+        codigo_zpl = re.sub(rf'(\^FO)\d+,\d+(\^[BY][^\^]+\^[B][^\^]+\^FD{dados}\^FS)', rf'\g<1>{novo_x},{novo_y}\g<2>', codigo_zpl)
+# Atualiza o campo de texto com o novo código ZPL
+entrada_texto.delete("1.0", tk.END)
+entrada_texto.insert(tk.END, codigo_zpl)
+def ao_redimensionar(evento): global janela_redimensionada # Verifica se o evento está sendo gerado pela janela principal if evento.widget == janela_principal: # Atualiza
+as coordenadas do retângulo nova_largura = evento.width - 30 if evento.height < 300: nova_altura = evento.height - 200 elif evento.height > 400 and evento.height < 500:
+nova_altura = evento.height - 310 elif evento.height > 500 and evento.height < 600: nova_altura = evento.height - 350 elif evento.height > 600: nova_altura = evento.height- 410 else: nova_altura = evento.height - 100 if not janela_redimensionada: canvas.coords(retangulo, 10 + deslocamento_x, 10 + deslocamento_y, nova_largura,
+nova_altura) janela_redimensionada = True else: canvas.coords(retangulo, 21, 20, nova_largura, nova_altura)
+Cria a janela principal
+janela_principal = tk.Tk() janela_principal.title(“Visualizador de Etiquetas ZPL”)
+Altera a largura e a altura da janela principal
+janela_principal.geometry(“800x800”)
+Configura as linhas e colunas para se expandirem ou encolherem
+proporcionalmente à janela
+janela_principal.rowconfigure(0, weight=1) janela_principal.rowconfigure(6, weight=1) janela_principal.columnconfigure(0, weight=1, minsize=100)
+janela_principal.columnconfigure(1, weight=1, minsize=100)
+Cria o campo de texto para entrada de código ZPL
+entrada_texto = tk.Text(janela_principal, height=9) entrada_texto.grid(row=0, column=0, columnspan=2, padx=20, sticky=“nsew”)
+Cria um frame para conter os botões
+frame_botoes = tk.Frame(janela_principal) frame_botoes.grid(row=1, column=0, columnspan=2)
+Bing
+Obrigado por compartilhar o código comigo. Pelo que eu entendi, este é um programa em Python que usa a biblioteca Tkinter para criar uma interface gráfica do usuário
+(GUI) para visualizar etiquetas ZPL. O código inclui várias funções, como atualizar_visualizacao, ao_pressionar_elemento, ao_arrastar_elemento, aplicar_mudancas e
+ao_redimensionar, que são usadas para manipular elementos na GUI e atualizar a visualização das etiquetas ZPL.
+Você pode me dizer mais sobre o que você precisa de ajuda? Eu farei o meu melhor para ajudá-lo. 
+ 
+ 
+Usuário
+Cria o botão para atualizar a visualização da etiqueta
+botao_atualizar = tk.Button(frame_botoes, text=“Atualizar”, command=atualizar_visualizacao) botao_atualizar.pack(side=tk.LEFT, padx=5)
+Cria o botão para aplicar as mudanças no código ZPL
+botao_aplicar = tk.Button(frame_botoes, text=“Aplicar”, command=aplicar_mudancas) botao_aplicar.pack(side=tk.LEFT, padx=5)
+Cria um frame para conter os botões de trava
+frame_travas = tk.Frame(janela_principal) frame_travas.grid(row=2, column=0, columnspan=2)
+Cria as variáveis para armazenar o estado das travas nos eixos X e Y
+trava_eixo_x = tk.BooleanVar() trava_eixo_y = tk.BooleanVar()
+Cria os botões para habilitar as travas nos eixos X e Y
+botao_trava_x = tk.Checkbutton(frame_travas, text=“Travar eixo X”, variable=trava_eixo_x) botao_trava_x.pack(side=tk.LEFT, padx=5)
+botao_trava_y = tk.Checkbutton(frame_travas, text=“Travar eixo Y”, variable=trava_eixo_y) botao_trava_y.pack(side=tk.LEFT, padx=5)
+Cria um frame para conter o rótulo e o elemento de seleção
+frame_elemento_selecao = tk.Frame(janela_principal) frame_elemento_selecao.grid(row=3, column=0, columnspan=2)
+Cria o rótulo para o elemento de seleção
+rotulo_elemento_selecao = tk.Label(frame_elemento_selecao, text=“Ajuste de posição:”) rotulo_elemento_selecao.pack(side=tk.LEFT, padx=5)
+Cria o elemento de seleção para escolher o valor pelo qual as coordenadas dos
+elementos devem ser incrementadas
+snap = ttk.Combobox(frame_elemento_selecao, values=[1, 5, 10, 50]) snap.current(0) snap.pack(side=tk.LEFT, padx=5)
+Cria o campo informativo para exibir as coordenadas atuais do elemento
+rotulo_coordenadas = tk.Label(janela_principal, text=“”) rotulo_coordenadas.grid(row=4, column=0, columnspan=2, padx=5)
+Cria o canvas para exibir a imagem da etiqueta
+canvas = tk.Canvas(janela_principal) canvas.grid(row=6, column=0, columnspan=2, padx=5, sticky=“nsew”) canvas.dados_codigo_barras = {}
+Adiciona um retângulo para delimitar a área de visualização da etiqueta
+deslocamento_x = 11 deslocamento_y = 10 retangulo = canvas.create_rectangle(10 + deslocamento_x, 10 + deslocamento_y, canvas.winfo_width() - 10 + deslocamento_x,
+canvas.winfo_height() - 10 + deslocamento_y)
+Vincula o evento de redimensionamento da janela à função ao_redimensionar
+janela_principal.bind(“”, ao_redimensionar)
+Inicia o loop principal da janela
+janela_principal.mainloop()
+Bing
+Obrigado por compartilhar o restante do código comigo. Eu vejo que você adicionou mais funções e elementos à interface gráfica do usuário (GUI), incluindo botões para
+atualizar a visualização da etiqueta e aplicar mudanças no código ZPL, botões para habilitar travas nos eixos X e Y, um elemento de seleção para escolher o valor pelo qual
+as coordenadas dos elementos devem ser incrementadas, um campo informativo para exibir as coordenadas atuais do elemento e um canvas para exibir a imagem da
+etiqueta.
+Você pode me dizer mais sobre o que você precisa de ajuda? Eu farei o meu melhor para ajudá-lo. 
+ 
+ 
+Usuário
+preciso criar uma função para mostra a resolução/dimensão da janela principal, mesmo que ela seja redimencionada
+Bing
+Você pode criar uma função para exibir a resolução/dimensão da janela principal, mesmo que ela seja redimensionada. Aqui está um exemplo de como você pode fazer isso:
+def mostrar_resolucao():
+    largura = janela_principal.winfo_width()
+    altura = janela_principal.winfo_height()
+print(f"A resolução atual da janela é {largura}x{altura}")
+Você pode chamar essa função sempre que quiser exibir a resolução atual da janela. Por exemplo, você pode vincular a função ao evento de redimensionamento da janela,
+para que ela seja chamada automaticamente sempre que a janela for redimensionada:
+janela_principal.bind("<Configure>", lambda evento: mostrar_resolucao())
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Ou melhor, preciso melhorar essas validações de altura, poderia me ajudar? Estou cobrindo uma area muito pequena de altura nas resoluções: def ao_redimensionar(evento):
+global janela_redimensionada # Verifica se o evento está sendo gerado pela janela principal if evento.widget == janela_principal: # Atualiza as coordenadas do retângulo
+nova_largura = evento.width - 30 if evento.height < 300: nova_altura = evento.height - 200 elif evento.height > 400 and evento.height < 500: nova_altura = evento.height 
+310 elif evento.height > 500 and evento.height < 600: nova_altura = evento.height - 350 elif evento.height > 600: nova_altura = evento.height - 410 else: nova_altura =
+evento.height - 100 if not janela_redimensionada: canvas.coords(retangulo, 10 + deslocamento_x, 10 + deslocamento_y, nova_largura, nova_altura) janela_redimensionada
+= True else: canvas.coords(retangulo, 21, 20, nova_largura, nova_altura)
+Bing
+Sim, eu posso ajudar. Parece que você está tentando atualizar a altura do retângulo quando a janela é redimensionada, mas as condições que você está usando para verificar a
+altura da janela estão cobrindo apenas uma pequena faixa de valores. Uma maneira de melhorar isso seria usar uma função matemática para calcular a nova altura do
+retângulo com base na altura atual da janela. Por exemplo, você pode usar uma função linear como esta:
+def ao_redimensionar(evento):
+global janela_redimensionada
+# Verifica se o evento está sendo gerado pela janela principal
+if evento.widget == janela_principal:
+# Atualiza as coordenadas do retângulo
+        nova_largura = evento.width - 30
+        nova_altura = max(0, evento.height - 200)
+if not janela_redimensionada:
+            canvas.coords(retangulo, 10 + deslocamento_x, 10 + deslocamento_y, nova_largura, nova_altura)
+            janela_redimensionada = True
+else:
+            canvas.coords(retangulo, 21, 20, nova_largura, nova_altura)
+Neste exemplo, a nova altura do retângulo é calculada subtraindo 200 da altura atual da janela e garantindo que o resultado seja pelo menos 0 (usando a função max). Isso
+deve permitir que o retângulo seja redimensionado corretamente para uma ampla gama de alturas de janela.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+mas quando eu almento a janela, para mais de 800 de tamanho o retangulo começa a ficar muito grande
+Bing
+Se você está tendo problemas com o retângulo ficando muito grande quando a janela é aumentada para mais de 800 pixels de altura, você pode ajustar a função
+ao_redimensionar para limitar o tamanho máximo do retângulo. Por exemplo, você pode adicionar uma condição para verificar se a nova altura do retângulo é maior do que
+um valor máximo e, em caso afirmativo, definir a nova altura para esse valor máximo. Aqui está um exemplo de como você pode fazer isso:
+def ao_redimensionar(evento):
+global janela_redimensionada
+# Verifica se o evento está sendo gerado pela janela principal
+if evento.widget == janela_principal:
+# Atualiza as coordenadas do retângulo
+        nova_largura = evento.width - 30
+        nova_altura = max(0, evento.height - 200)
+        altura_maxima = 600  # Altura máxima do retângulo
+if nova_altura > altura_maxima:
+            nova_altura = altura_maxima
+if not janela_redimensionada:
+            canvas.coords(retangulo, 10 + deslocamento_x, 10 + deslocamento_y, nova_largura, nova_altura)
+            janela_redimensionada = True
+else:
+            canvas.coords(retangulo, 21, 20, nova_largura, nova_altura)
+Neste exemplo, a altura máxima do retângulo é definida como 600 pixels. Se a nova altura calculada for maior do que esse valor, ela será definida como 600 pixels. Isso
+deve impedir que o retângulo fique muito grande quando a janela for aumentada para mais de 800 pixels de altura.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+não deu certo, seria bom fazer o calculo de altura em relação ao tamanho da janela principal então
+Bing
+Sim, você pode ajustar a função ao_redimensionar para calcular a nova altura do retângulo com base na altura atual da janela principal. Aqui está um exemplo de como você
+pode fazer isso:
+def ao_redimensionar(evento):
+global janela_redimensionada
+# Verifica se o evento está sendo gerado pela janela principal
+if evento.widget == janela_principal:
+# Atualiza as coordenadas do retângulo
+        nova_largura = evento.width - 30
+        nova_altura = evento.height * 0.8  # Calcula a nova altura com base na altura atual da janela
+if not janela_redimensionada:
+            canvas.coords(retangulo, 10 + deslocamento_x, 10 + deslocamento_y, nova_largura, nova_altura)
+            janela_redimensionada = True
+else:
+            canvas.coords(retangulo, 21, 20, nova_largura, nova_altura)
+Neste exemplo, a nova altura do retângulo é calculada multiplicando a altura atual da janela por 0.8. Isso significa que o retângulo sempre terá uma altura igual a 80% da
+altura da janela. Você pode ajustar esse valor para obter o tamanho desejado do retângulo.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Bing
+Que bom que você gostou dessa resposta!
+Usuário
+Como eu movo os botões um pouco mais para baixo?
+Bing
+Para mover os botões um pouco mais para baixo na interface gráfica do usuário (GUI), você pode ajustar o layout dos elementos na janela principal. Uma maneira de fazer
+isso é adicionar um pady (preenchimento vertical) ao frame_botoes quando você o coloca na grade usando o método grid. Aqui está um exemplo de como você pode fazer
+isso:
+# Cria um frame para conter os botões
+frame_botoes = tk.Frame(janela_principal)
+frame_botoes.grid(row=1, column=0, columnspan=2, pady=10)  # Adiciona um preenchimento vertical de 10 pixels
+Neste exemplo, um preenchimento vertical de 10 pixels é adicionado ao frame_botoes, o que move os botões um pouco mais para baixo na GUI. Você pode ajustar o valor
+do pady para obter a quantidade desejada de espaço entre os botões e os elementos acima deles.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Como aumentar o tamanho dos botões?
+Bing
+Para aumentar o tamanho dos botões na interface gráfica do usuário (GUI), você pode ajustar o tamanho da fonte usada nos botões. Uma maneira de fazer isso é usar o
+método config do botão para alterar a opção font. Aqui está um exemplo de como você pode fazer isso:
+# Cria o botão para atualizar a visualização da etiqueta
+botao_atualizar = tk.Button(frame_botoes, text="Atualizar", command=atualizar_visualizacao)
+botao_atualizar.pack(side=tk.LEFT, padx=5)
+botao_atualizar.config(font=("TkDefaultFont", 14))  # Aumenta o tamanho da fonte para 14
+# Cria o botão para aplicar as mudanças no código ZPL
+botao_aplicar = tk.Button(frame_botoes, text="Aplicar", command=aplicar_mudancas)
+botao_aplicar.pack(side=tk.LEFT, padx=5)
+botao_aplicar.config(font=("TkDefaultFont", 14))  # Aumenta o tamanho da fonte para 14
+Neste exemplo, o tamanho da fonte dos botões botao_atualizar e botao_aplicar é aumentado para 14 usando o método config. Isso faz com que os botões fiquem maiores
+na GUI. Você pode ajustar o tamanho da fonte para obter o tamanho desejado dos botões.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+e para almentar a fonte do travar eixo x e travar eixo y? Assim como para o “Ajuste de posição” ?
+Bing
+Para aumentar o tamanho da fonte dos botões “Travar eixo X” e “Travar eixo Y”, assim como para o rótulo “Ajuste de posição”, você pode usar o método config para
+alterar a opção font desses elementos. Aqui está um exemplo de como você pode fazer isso:
+# Cria os botões para habilitar as travas nos eixos X e Y
+botao_trava_x = tk.Checkbutton(frame_travas, text="Travar eixo X", variable=trava_eixo_x)
+botao_trava_x.pack(side=tk.LEFT, padx=5)
+botao_trava_x.config(font=("TkDefaultFont", 14))  # Aumenta o tamanho da fonte para 14
+botao_trava_y = tk.Checkbutton(frame_travas, text="Travar eixo Y", variable=trava_eixo_y)
+botao_trava_y.pack(side=tk.LEFT, padx=5)
+botao_trava_y.config(font=("TkDefaultFont", 14))  # Aumenta o tamanho da fonte para 14
+# Cria o rótulo para o elemento de seleção
+rotulo_elemento_selecao = tk.Label(frame_elemento_selecao, text="Ajuste de posição:")
+rotulo_elemento_selecao.pack(side=tk.LEFT, padx=5)
+rotulo_elemento_selecao.config(font=("TkDefaultFont", 14))  # Aumenta o tamanho da fonte para 14
+Neste exemplo, o tamanho da fonte dos botões botao_trava_x e botao_trava_y, assim como do rótulo rotulo_elemento_selecao, é aumentado para 14 usando o método
+config. Isso faz com que esses elementos fiquem maiores na GUI. Você pode ajustar o tamanho da fonte para obter o tamanho desejado desses elementos.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Como eu deixo essa fonte em negrito?
+Bing
+Para deixar a fonte em negrito, você pode usar o método config para alterar a opção font dos elementos e especificar uma fonte em negrito. Aqui está um exemplo de como
+você pode fazer isso:
+# Cria os botões para habilitar as travas nos eixos X e Y
+botao_trava_x = tk.Checkbutton(frame_travas, text="Travar eixo X", variable=trava_eixo_x)
+botao_trava_x.pack(side=tk.LEFT, padx=5)
+botao_trava_x.config(font=("TkDefaultFont", 14, "bold"))  # Aumenta o tamanho da fonte para 14 e define como negrito
+botao_trava_y = tk.Checkbutton(frame_travas, text="Travar eixo Y", variable=trava_eixo_y)
+botao_trava_y.pack(side=tk.LEFT, padx=5)
+botao_trava_y.config(font=("TkDefaultFont", 14, "bold"))  # Aumenta o tamanho da fonte para 14 e define como negrito
+# Cria o rótulo para o elemento de seleção
+rotulo_elemento_selecao = tk.Label(frame_elemento_selecao, text="Ajuste de posição:")
+rotulo_elemento_selecao.pack(side=tk.LEFT, padx=5)
+rotulo_elemento_selecao.config(font=("TkDefaultFont", 14, "bold"))  # Aumenta o tamanho da fonte para 14 e define como negrito
+Neste exemplo, a fonte dos botões botao_trava_x e botao_trava_y, assim como do rótulo rotulo_elemento_selecao, é aumentada para 14 e definida como negrito usando o
+método config. Isso faz com que esses elementos fiquem maiores e em negrito na GUI. Você pode ajustar o tamanho da fonte e o estilo (negrito ou normal) para obter a
+aparência desejada desses elementos.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Posso usar outra fonte mais estilosa? Você teria alguma em mente?
+Bing
+Sim, você pode usar qualquer fonte que esteja disponível em seu sistema para estilizar os elementos da interface gráfica do usuário (GUI). Algumas fontes populares que
+você pode experimentar incluem “Helvetica”, “Arial”, “Times New Roman” e “Courier New”. Aqui está um exemplo de como você pode alterar a fonte de um elemento
+para usar uma dessas fontes:
+# Cria o rótulo para o elemento de seleção
+rotulo_elemento_selecao = tk.Label(frame_elemento_selecao, text="Ajuste de posição:")
+rotulo_elemento_selecao.pack(side=tk.LEFT, padx=5)
+rotulo_elemento_selecao.config(font=("Helvetica", 14, "bold"))  # Altera a fonte para Helvetica, tamanho 14 e negrito
+Neste exemplo, a fonte do rótulo rotulo_elemento_selecao é alterada para “Helvetica” com tamanho 14 e estilo negrito usando o método config. Isso faz com que o rótulo
+fique maior e em negrito na GUI, usando a fonte Helvetica. Você pode experimentar diferentes fontes e estilos para encontrar a aparência desejada para os elementos da
+GUI.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Como faço para alterar a cor da fonte no Tkinter?
+Bing
+Para alterar a cor da fonte de
+Usuário
+Como faço para alterar a cor da fonte no Tkinter?
+Bing
+Para alterar a cor da fonte de um elemento no Tkinter, você pode usar o método config para alterar a opção foreground do elemento. Aqui está um exemplo de como você
+pode fazer isso:
+# Cria o rótulo para o elemento de seleção
+rotulo_elemento_selecao = tk.Label(frame_elemento_selecao, text="Ajuste de posição:")
+rotulo_elemento_selecao.pack(side=tk.LEFT, padx=5)
+rotulo_elemento_selecao.config(foreground="red")  # Altera a cor da fonte para vermelho
+Neste exemplo, a cor da fonte do rótulo rotulo_elemento_selecao é alterada para vermelho usando o método config. Isso faz com que o texto do rótulo fique vermelho na
+GUI. Você pode usar qualquer cor que esteja disponível em seu sistema para alterar a cor da fonte dos elementos.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Bing
+Que bom que você gostou dessa resposta!
+Usuário
+eu gostaria de poder de alguma forma fazer com que fosse permitido criar textos ou código de barras, por exemplo um botão de “criar elemento” que abrisse uma janela com
+as opções de “criar texto” e “criar código de barras”. E quando o usuário clicar em um dos dois, dependendo de qual ele clicar, aparecer um campo pra ele digitar “insara o
+texto” ou “insira o código de barras”
+Bing
+Sim, você pode adicionar um botão “Criar elemento” à interface gráfica do usuário (GUI) que, quando clicado, abre uma nova janela com opções para criar um texto ou um
+código de barras. Aqui está um exemplo de como você pode fazer isso:
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.current(0)
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o botão para adicionar o elemento
+    botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento")
+    botao_adicionar_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o botão para criar um novo elemento
+botao_criar_elemento = tk.Button(frame_botoes, text="Criar elemento", command=criar_elemento)
+botao_criar_elemento.pack(side=tk.LEFT, padx=5)
+Neste exemplo, uma função criar_elemento é definida para criar uma nova janela secundária quando chamada. Essa janela contém vários elementos, incluindo um rótulo e
+um elemento de seleção para escolher o tipo de elemento (texto ou código de barras), um rótulo e um campo de entrada para o conteúdo do elemento e um botão para
+adicionar o elemento. Um botão botao_criar_elemento é adicionado ao frame_botoes e configurado para chamar a função criar_elemento quando clicado.
+Você pode expandir esse código para implementar a lógica necessária para adicionar elementos de texto ou código de barras à GUI quando o usuário clicar no botão
+“Adicionar elemento” na janela secundária.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+aonde ficaria bom para mim inserir essas linhas? talves no vim do código?
+Bing
+Você pode inserir essas linhas de código em qualquer lugar do seu código, desde que estejam dentro do escopo correto. Por exemplo, você pode inserir a definição da função
+criar_elemento logo após a definição das outras funções no início do seu código. O botão botao_criar_elemento pode ser adicionado ao frame_botoes junto com os outros
+botões, então você pode inserir essas linhas de código logo após a criação dos outros botões.
+Aqui está um exemplo de como o código final pode ficar:
+# Cria um frame para conter os botões
+frame_botoes = tk.Frame(janela_principal)
+frame_botoes.grid(row=1, column=0, columnspan=2)
+# Cria o botão para atualizar a visualização da etiqueta
+botao_atualizar = tk.Button(frame_botoes, text="Atualizar", command=atualizar_visualizacao)
+botao_atualizar.pack(side=tk.LEFT, padx=5)
+# Cria o botão para aplicar as mudanças no código ZPL
+botao_aplicar = tk.Button(frame_botoes, text="Aplicar", command=aplicar_mudancas)
+botao_aplicar.pack(side=tk.LEFT, padx=5)
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.current(0)
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o botão para adicionar o elemento
+    botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento")
+    botao_adicionar_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o botão para criar um novo elemento
+botao_criar_elemento = tk.Button(frame_botoes, text="Criar elemento", command=criar_elemento)
+botao_criar_elemento.pack(side=tk.LEFT, padx=5)
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+vamos modificar um pouco essa telinha de selecionar elemento, se o usuário selecionar texto deve aparecer uma opção para ele selecionar o tamanho da fonte também, após
+ele clicar em adicionar elemento o programa deve formatar em zpl oque ele escreveu em texto. Por exemplo, se a pessoa selecionar texto, descrever o tamanho da fonte,
+escrever o texto no campo conteudo do elemento e clicar em adicionar elemento o programa deve formatar para zpl, se o usuário selecionar tamanho da fonte 34, digitar
+elemento e clicar em adicionar elemento o programa deve fazer o seguinte: escrever no código zpl ^FO50,50^A0,34^FDComprimento^FS, podemos usar a posição padrão
+de 50, 50 para todos os elementos criados apartir dessa função. Não sei se consegui explicar claramente
+Bing
+Sim, entendi o que você quer fazer. Você pode modificar a função criar_elemento para incluir um elemento de seleção para escolher o tamanho da fonte quando o usuário
+selecionar a opção “Texto” no elemento de seleção do tipo de elemento. Aqui está um exemplo de como você pode fazer isso:
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.current(0)
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+    rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+    rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho da fonte
+    tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+    tamanho_fonte.current(2)
+    tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+elif tipo_elemento.get() == "Código de barras":
+# Adicione aqui a lógica para adicionar um código de barras
+pass
+        janela_criar_elemento.destroy()
+# Cria o botão para adicionar o elemento
+    botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento", command=adicionar_elemento)
+    botao_adicionar_elemento.pack(side=tk.TOP, padx=5, pady=5)
+Neste exemplo, um rótulo e um elemento de seleção são adicionados à janela secundária para permitir que o usuário escolha o tamanho da fonte quando a opção “Texto” é
+selecionada no elemento de seleção do tipo de elemento. Quando o usuário clica no botão “Adicionar elemento”, a função adicionar_elemento é chamada. Essa função
+verifica se a opção “Texto” foi selecionada e, em caso afirmativo, obtém o tamanho da fonte e o texto digitado pelo usuário e cria um código ZPL para adicionar um texto
+com essas propriedades à etiqueta. O código ZPL é inserido no campo de texto entrada_texto usando o método insert. Você pode expandir esse código para implementar a
+lógica necessária para adicionar códigos de barras à etiqueta quando a opção “Código de barras” for selecionada.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+eu coloquei assim: # Cria o botão para atualizar a visualização da etiqueta botao_atualizar = tk.Button(frame_botoes, text=“Atualizar”, command=atualizar_visualizacao)
+botao_atualizar.pack(side=tk.LEFT, padx=5) botao_atualizar.config(font=(“fonte”, 12, “bold”))
+def criar_elemento(): # Cria a janela secundária janela_criar_elemento = tk.Toplevel(janela_principal) janela_criar_elemento.title(“Criar elemento”)
+# Cria o rótulo para o tipo de elemento
+rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+tipo_elemento.current(0)
+tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho da fonte
+tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+tamanho_fonte.current(2)
+tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o conteúdo do elemento
+rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+conteudo_elemento = tk.Entry(janela_criar_elemento)
+conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+    if tipo_elemento.get() == "Texto":
+        tamanho = tamanho_fonte.get()
+        texto = conteudo_elemento.get()
+        codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+        entrada_texto.insert(tk.END, codigo_zpl)
+    elif tipo_elemento.get() == "Código de barras":
+        # Adicione aqui a lógica para adicionar um código de barras
+        pass
+    janela_criar_elemento.destroy()
+Cria o botão para adicionar o elemento
+botao_adicionar_elemento = tk.Button(janela_criar_elemento, text=“Adicionar elemento”, command=adicionar_elemento) botao_adicionar_elemento.pack(side=tk.TOP,
+padx=5, pady=5) botao_adicionar_elemento_elemento.config(font=(“fonte”, 12, “bold”)) mas ta dando esse erro: Traceback (most recent call last): File
+“C:\Users\tiago.marcondes\Desktop\Tarefas\vpl.py”, line 233, in botao_adicionar_elemento = tk.Button(janela_criar_elemento, text=“Adicionar elemento”,
+command=adicionar_elemento) ^^^^^^^^^^^^^^^^^^^^^ NameError: name ‘janela_criar_elemento’ is not defined
+Bing
+O erro NameError: name 'janela_criar_elemento' is not defined indica que a variável janela_criar_elemento não está definida no escopo em que está sendo usada. No
+código que você compartilhou, parece que você está tentando criar o botão botao_adicionar_elemento fora da função criar_elemento, onde a variável
+janela_criar_elemento não está definida.
+Para corrigir esse erro, você deve mover as linhas de código que criam o botão botao_adicionar_elemento para dentro da função criar_elemento, logo após a definição da
+função adicionar_elemento. Aqui está um exemplo de como o código corrigido pode ficar:
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.current(0)
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+    rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+    rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho da fonte
+    tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+    tamanho_fonte.current(2)
+    tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+elif tipo_elemento.get() == "Código de barras":
+# Adicione aqui a lógica para adicionar um código de barras
+pass
+        janela_criar_elemento.destroy()
+# Cria o botão para adicionar o elemento
+    botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento", command=adicionar_elemento)
+    botao_adicionar_elemento.pack(side=tk.TOP, padx=5, pady=5)
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+quando eu executar o programa, como vou fazer pra chamar a função de adicionar elemento?
+Bing
+Para chamar a função de adicionar elemento, você pode clicar no botão “Criar elemento” na interface gráfica do usuário (GUI). Isso abrirá uma nova janela com opções para
+criar um texto ou um código de barras. Quando você selecionar o tipo de elemento desejado, digitar o conteúdo do elemento e clicar no botão “Adicionar elemento” nessa
+janela, a função adicionar_elemento será chamada e o elemento será adicionado à etiqueta.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Muito bom, eu preciso que a aba de selecionar tamanho da fonte só apareça quando o usuário selecionar o tipo do elemento texto
+Bing
+Para fazer com que a opção de selecionar o tamanho da fonte só apareça quando o usuário selecionar a opção “Texto” no elemento de seleção do tipo de elemento, você
+pode usar o evento <<ComboboxSelected>> do elemento de seleção tipo_elemento para verificar qual opção foi selecionada e mostrar ou ocultar os elementos relacionados ao
+tamanho da fonte de acordo. Aqui está um exemplo de como você pode fazer isso:
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.current(0)
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+    rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+    rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho da fonte
+    tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+    tamanho_fonte.current(2)
+    tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+def ao_selecionar_tipo_elemento(evento):
+if tipo_elemento.get() == "Texto":
+            rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+else:
+            rotulo_tamanho_fonte.pack_forget()
+            tamanho_fonte.pack_forget()
+    tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo_elemento)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+elif tipo_elemento.get() == "Código de barras":
+# Adicione aqui a lógica para adicionar um código de barras
+pass
+        janela_criar_elemento.destroy()
+# Cria o botão para adicionar o elemento
+    botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento", command=adicionar_elemento)
+    botao_adicionar_elemento.pack(side=tk.TOP, padx=5, pady=5)
+Neste exemplo, uma função ao_selecionar_tipo_elemento é definida e vinculada ao evento <<ComboboxSelected>> do elemento de seleção tipo_elemento. Quando uma
+opção é selecionada nesse elemento de seleção, a função ao_selecionar_tipo_elemento é chamada. Essa função verifica se a opção selecionada é “Texto” e, em caso
+afirmativo, mostra os elementos relacionados ao tamanho da fonte usando o método pack. Caso contrário (se a opção selecionada não for “Texto”), os elementos
+relacionados ao tamanho da fonte são ocultados usando o método pack_forget.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+A, muito bom. Agora vamos para o código de barras, preciso que ao selecionar o tipo de elemento código de barras o usário possa inserir o número do código de barras e
+então quando ele clicar em adicionar elemento o programa escreva o código zpl do código de barras, por exemplo, se o usuário digitar 01601715625 e clicar em adicionar
+elemento o programa deve escrever ^FO100,100^BY3^BUN,80,Y^FD01601715625^FS usaremos o posicionamento 100,100 por padrão. Porem precisamos dar a
+posibilidade do usuário escolher de que tamanho o código de barras vai ser, o tamanho deve ser entre 1 e 5, sendo o valor padrão 3, presente no ^BY3. Entendeu? No caso o
+programa deve formatar para zpl, escrever o novo código de barras em zp. Não sei se expliquei direito
+Bing
+Sim, entendi o que você quer fazer. Você pode modificar a função criar_elemento para incluir um elemento de seleção para escolher o tamanho do código de barras quando
+o usuário selecionar a opção “Código de barras” no elemento de seleção do tipo de elemento. Aqui está um exemplo de como você pode fazer isso:
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.current(0)
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho do código de barras
+    rotulo_tamanho_codigo_barras = tk.Label(janela_criar_elemento, text="Tamanho do código de barras:")
+    rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho do código de barras
+    tamanho_codigo_barras = ttk.Combobox(janela_criar_elemento, values=[1, 2, 3, 4, 5])
+    tamanho_codigo_barras.current(2)
+    tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+def ao_selecionar_tipo_elemento(evento):
+if tipo_elemento.get() == "Texto":
+            rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            rotulo_tamanho_codigo_barras.pack_forget()
+            tamanho_codigo_barras.pack_forget()
+elif tipo_elemento.get() == "Código de barras":
+            rotulo_tamanho_fonte.pack_forget()
+            tamanho_fonte.pack_forget()
+            rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+    tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo_elemento)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+elif tipo_elemento.get() == "Código de barras":
+            tamanho = tamanho_codigo_barras.get()
+            codigo = conteudo_elemento.get()
+            codigo_zpl = f"^FO100,100^BY{tamanho}^BUN,80,Y^FD{codigo}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+        janela_criar_elemento.destroy()
+# Cria o botão para adicionar o elemento
+    botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento", command=adicionar_elemento)
+    botao_adicionar_elemento.pack(side=tk.TOP, padx=5, pady=5)
+Neste exemplo, um rótulo e um elemento de seleção são adicionados à janela secundária para permitir que o usuário escolha o tamanho do código de barras quando a opção
+“Código de barras” é selecionada no elemento de seleção do tipo de elemento. Quando o usuário clica no botão “Adicionar elemento”, a função adicionar_elemento é
+chamada. Essa função verifica se a opção “Código de barras” foi selecionada e, em caso afirmativo, obtém o tamanho do código de barras e o código digitado pelo usuário e
+cria um código ZPL para adicionar um código de barras com essas propriedades à etiqueta. O código ZPL é inserido no campo de texto entrada_texto usando o método
+insert.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Muito bom, sabe que eu tenho essa função aqui: def atualizar_visualizacao(): global deslocamento_x, deslocamento_y deslocamento_x = 21 deslocamento_y = 20
+# Obtém o código ZPL do campo de texto
+codigo_zpl = entrada_texto.get("1.0", tk.END)
+# Analisa o código ZPL para extrair informações sobre os elementos
+elementos = []
+for match in re.finditer(r'\^FO(\d+),(\d+)\^A[^\^]+,(\d+),(\d+)\^FD([^\^]+)\^FS', codigo_zpl):
+    x, y, altura_fonte, largura_fonte, texto = match.groups()
+    elementos.append(('texto', int(x), int(y), int(altura_fonte), int(largura_fonte), texto))
+for match in re.finditer(r'\^FO(\d+),(\d+)\^BY[^\^]+\^B[^\^]+\^FD([^\^]+)\^FS', codigo_zpl):
+    x, y, dados = match.groups()
+    elementos.append(('codigo_barras', int(x), int(y), dados))
+# Limpa o canvas e o dicionário de códigos de barras
+for item in canvas.find_all():
+    if canvas.type(item) in ("text", "image"):
+        canvas.delete(item)
+canvas.dados_codigo_barras = {}
+# Cria objetos gráficos interativos para representar os elementos
+for elemento in elementos:
+    if elemento[0] == 'texto':
+        _, x, y, altura_fonte, largura_fonte, texto = elemento
+        fator_escala = 0.73  # Fator de escala para o tamanho da fonte
+        item = canvas.create_text(x + deslocamento_x, y + deslocamento_y, text=texto, anchor=tk.NW, font=("Calibri Bold", int(altura_fonte * fator_escala)))
+        canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+        canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+    elif elemento[0] == 'codigo_barras':
+        _, x, y, dados = elemento
+        escritor = ImageWriter()
+        escritor.dpi = 300
+        escritor.altura_modulo = 5.0
+        upca = barcode.get('upca', dados, writer=escritor)
+        imagem = upca.render()
+        imagem.thumbnail((200, 200))
+        foto = ImageTk.PhotoImage(imagem)
+        item = canvas.create_image(x + deslocamento_x, y + deslocamento_y, image=foto, anchor=tk.NW)
+        canvas.dados_codigo_barras[item] = dados
+        canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+        canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+        # Adiciona a imagem ao dicionário de imagens do canvas
+        if not hasattr(canvas, '_imagens'):
+            canvas._imagens = {}
+        canvas._imagens[item] = foto
+        print(f"Adicionando imagem ao dicionário: {item} -> {foto}")
+        # Armazena uma referência ao objeto PhotoImage para evitar que ele seja coletado pelo coletor de lixo
+        if not hasattr(canvas, '_fotos'):
+            canvas._fotos = []
+        canvas._fotos.append(foto)
+Eu gostaria de fazer com que o tamanho da foto do código de barras seja alterada conforme o tamanho definido na parte ^BY dos códigos de barras inseridos em zpl. Assim
+esse novo tamanho surtiria efetio também na função def criar_elemento():, porque atualmente se o usuário inserir um valor diferente para o ^BY nada acontece. Podemos
+usar o tamanho da imagem do código de barras atual como referencia, reduzir o tamanho dela se o usuário escolher o tamanho ^BY 2 ou ^BY 1 proporcionalmente, e
+ampliar o tamanho se ele escolher 4 ou 5. Não sei se você entendeu
+Bing
+Sim, entendi o que você quer fazer. Você pode modificar a função atualizar_visualizacao para extrair o tamanho do código de barras do código ZPL e usar esse valor para
+ajustar o tamanho da imagem do código de barras. Aqui está um exemplo de como você pode fazer isso:
+def atualizar_visualizacao():
+global deslocamento_x, deslocamento_y
+    deslocamento_x = 21
+    deslocamento_y = 20
+# Obtém o código ZPL do campo de texto
+    codigo_zpl = entrada_texto.get("1.0", tk.END)
+# Analisa o código ZPL para extrair informações sobre os elementos
+    elementos = []
+for match in re.finditer(r'\^FO(\d+),(\d+)\^A[^\^]+,(\d+),(\d+)\^FD([^\^]+)\^FS', codigo_zpl):
+        x, y, altura_fonte, largura_fonte, texto = match.groups()
+        elementos.append(('texto', int(x), int(y), int(altura_fonte), int(largura_fonte), texto))
+for match in re.finditer(r'\^FO(\d+),(\d+)\^BY(\d+)[^\^]+\^B[^\^]+\^FD([^\^]+)\^FS', codigo_zpl):
+        x, y, tamanho, dados = match.groups()
+        elementos.append(('codigo_barras', int(x), int(y), int(tamanho), dados))
+# Limpa o canvas e o dicionário de códigos de barras
+for item in canvas.find_all():
+if canvas.type(item) in ("text", "image"):
+            canvas.delete(item)
+    canvas.dados_codigo_barras = {}
+# Cria objetos gráficos interativos para representar os elementos
+for elemento in elementos:
+if elemento[0] == 'texto':
+            _, x, y, altura_fonte, largura_fonte, texto = elemento
+            fator_escala = 0.73  
+# Fator de escala para o tamanho da fonte
+            item = canvas.create_text(x + deslocamento_x, y + deslocamento_y, text=texto, anchor=tk.NW, font=("Calibri Bold", int(altura_fonte * fator_escala)))
+            canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+            canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+elif elemento[0] == 'codigo_barras':
+            _, x, y, tamanho, dados = elemento
+            escritor = ImageWriter()
+            escritor.dpi = 300
+            escritor.altura_modulo = 5.0 * tamanho / 3.0  # Ajusta a altura do módulo com base no tamanho do código de barras
+            upca = barcode.get('upca', dados, writer=escritor)
+            imagem = upca.render()
+            imagem.thumbnail((200 * tamanho / 3.0, 200 * tamanho / 3.0))  # Ajusta o tamanho da imagem com base no tamanho do código de barras
+            foto = ImageTk.PhotoImage(imagem)
+            item = canvas.create_image(x + deslocamento_x, y + deslocamento_y, image=foto, anchor=tk.NW)
+            canvas.dados_codigo_barras[item] = dados
+            canvas.tag_bind(item, "<ButtonPress-1>", ao_pressionar_elemento)
+            canvas.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+# Adiciona a imagem ao dicionário de imagens do canvas
+if not hasattr(canvas, '_imagens'):
+                canvas._imagens = {}
+            canvas._imagens[item] = foto
+# Armazena uma referência ao objeto PhotoImage para evitar que ele seja coletado pelo coletor de lixo
+if not hasattr(canvas, '_fotos'):
+                canvas._fotos = []
+            canvas._fotos.append(foto)
+Neste exemplo, a expressão regular usada para extrair informações sobre códigos de barras do código ZPL foi modificada para incluir um grupo de captura para o tamanho
+do código de barras (o valor após ^BY). Esse valor é convertido em um inteiro e adicionado à tupla que representa o elemento do código de barras. Quando os objetos
+gráficos são criados para representar os elementos na tela, a altura do módulo e o tamanho da imagem do código de barras são ajustados com base no tamanho do código de
+barras extraído do código ZPL.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+porque nessa parte: def ao_selecionar_tipo_elemento(evento): if tipo_elemento.get() == “Texto”: rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5) rotulo_tamanho_codigo_barras.pack_forget() tamanho_codigo_barras.pack_forget() elif tipo_elemento.get() ==
+“Código de barras”: rotulo_tamanho_fonte.pack_forget() tamanho_fonte.pack_forget() rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5) temos o tamanho_codigo_barras.pack_forget() no if do texto?
+Bing
+O método pack_forget é usado para remover temporariamente um widget da tela sem destruí-lo. Na função ao_selecionar_tipo_elemento, o método pack_forget é chamado
+nos elementos relacionados ao tamanho da fonte e ao tamanho do código de barras para ocultá-los quando a opção selecionada no elemento de seleção do tipo de elemento
+não corresponde a eles.
+Por exemplo, quando a opção “Texto” é selecionada, os elementos relacionados ao tamanho da fonte são mostrados usando o método pack, enquanto os elementos
+relacionados ao tamanho do código de barras são ocultados usando o método pack_forget. Isso garante que apenas os elementos relevantes para a opção selecionada sejam
+exibidos na tela.
+Espero que isso ajude a esclarecer o uso do método pack_forget nessa parte do código. Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar.
+😊
+Usuário
+o select para o tamanho do código de barras esta presente aonde nessa função?
+Bing
+Na função criar_elemento, o elemento de seleção para escolher o tamanho do código de barras é criado com o seguinte código:
+# Cria o rótulo para o tamanho do código de barras
+rotulo_tamanho_codigo_barras = tk.Label(janela_criar_elemento, text="Tamanho do código de barras:")
+rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho do código de barras
+tamanho_codigo_barras = ttk.Combobox(janela_criar_elemento, values=[1, 2, 3, 4, 5])
+tamanho_codigo_barras.current(2)
+tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+Essas linhas de código criam um rótulo e um elemento de seleção ttk.Combobox para permitir que o usuário escolha o tamanho do código de barras. O elemento de seleção é
+configurado com valores de 1 a 5 e o valor padrão é definido como 3 usando o método current.
+Espero que isso ajude a esclarecer onde o elemento de seleção para escolher o tamanho do código de barras é criado na função criar_elemento. Se você tiver mais alguma
+dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+Não havia dado certo da sua forma, fiz assim e deu certo: def criar_elemento(): # Cria a janela secundária janela_criar_elemento = tk.Toplevel(janela_principal)
+janela_criar_elemento.title(“Criar elemento”)
+# Cria o rótulo para o tipo de elemento
+rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+tipo_elemento.current(0)
+tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho da fonte
+tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+tamanho_fonte.current(2)
+tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho do código de barras
+rotulo_tamanho_codigo_barras = tk.Label(janela_criar_elemento, text="Tamanho do código de barras:")
+rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho do código de barras
+tamanho_codigo_barras = ttk.Combobox(janela_criar_elemento, values=[1, 2, 3, 4, 5])
+tamanho_codigo_barras.current(2)
+tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+def ao_selecionar_tipo_elemento(evento):
+    if tipo_elemento.get() == "Texto":
+        rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+        tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+    else:
+        rotulo_tamanho_fonte.pack_forget()
+        tamanho_fonte.pack_forget()
+tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo_elemento)
+# Cria o rótulo para o conteúdo do elemento
+rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+conteudo_elemento = tk.Entry(janela_criar_elemento)
+conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+    if tipo_elemento.get() == "Texto":
+        tamanho = tamanho_fonte.get()
+        texto = conteudo_elemento.get()
+        codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+        entrada_texto.insert(tk.END, codigo_zpl)
+        tamanho_codigo_barras.pack_forget()
+    elif tipo_elemento.get() == "Código de barras":
+        tamanho = tamanho_codigo_barras.get()
+        codigo = conteudo_elemento.get()
+        codigo_zpl = f"^FO100,100^BY{tamanho}^BUN,80,Y^FD{codigo}^FS"
+        entrada_texto.insert(tk.END, codigo_zpl)
+    janela_criar_elemento.destroy()
+# Cria o botão para adicionar o elemento
+botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento", command=adicionar_elemento)
+botao_adicionar_elemento.pack(side=tk.TOP, padx=5, pady=5) Porem ao clicar em "criar elemento" eu preciso que por padrão nem o texto nemo código de barras esteja
+Bing
+Para fazer com que nenhuma opção seja selecionada por padrão no elemento de seleção do tipo de elemento, você pode remover a linha de código que define o valor padrão
+usando o método current. Aqui está um exemplo de como o código pode ficar:
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+    rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+    rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho da fonte
+    tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+    tamanho_fonte.current(2)
+    tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho do código de barras
+    rotulo_tamanho_codigo_barras = tk.Label(janela_criar_elemento, text="Tamanho do código de barras:")
+    rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho do código de barras
+    tamanho_codigo_barras = ttk.Combobox(janela_criar_elemento, values=[1, 2, 3, 4, 5])
+    tamanho_codigo_barras.current(2)
+    tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+def ao_selecionar_tipo_elemento(evento):
+if tipo_elemento.get() == "Texto":
+            rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+else:
+            rotulo_tamanho_fonte.pack_forget()
+            tamanho_fonte.pack_forget()
+    tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo_elemento)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+            tamanho_codigo_barras.pack_forget()
+elif tipo_elemento.get() == "Código de barras":
+            tamanho = tamanho_codigo_barras.get()
+            codigo = conteudo_elemento.get()
+            codigo_zpl = f"^FO100,100^BY{tamanho}^BUN,80,Y^FD{codigo}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+        janela_criar_elemento.destroy()
+# Cria o botão para adicionar o elemento
+    botao_adicionar_elemento = tk.Button(janela_criar_elemento, text="Adicionar elemento", command=adicionar_elemento)
+    botao_adicionar_elemento.pack(side=tk.TOP
+<div class="user-title">Usuário</div>
+você parou de escrever o código
+<div class="bot-title">Bing</div>
+Desculpe, parece que minha resposta anterior foi cortada. Aqui está o código completo que eu estava tentando compartilhar com você:
+```python
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+    rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+    rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho da fonte
+    tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+    tamanho_fonte.current(2)
+    tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho do código de barras
+    rotulo_tamanho_codigo_barras = tk.Label(janela_criar_elemento, text="Tamanho do código de barras:")
+    rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tamanho do código de barras
+    tamanho_codigo_barras = ttk.Combobox(janela_criar_elemento, values=[1, 2, 3, 4, 5])
+    tamanho_codigo_barras.current(2)
+    tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+def ao_selecionar_tipo_elemento(evento):
+if tipo_elemento.get() == "Texto":
+            rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+else:
+            rotulo_tamanho_fonte.pack_forget()
+            tamanho_fonte.pack_forget()
+    tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo_elemento)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+            tamanho_codigo_barras.pack_forget()
+elif tipo_elemento.get() == "Código de barras":
+            tamanho = tamanho_codigo_barras.get()
+            codigo = conteudo_elemento.get()
+            codigo_zpl = f"^FO100
+<div class="user-title">Usuário</div>
+o tamanho do código de barras permanece quando eu seleciono o tipo de elemento texto, ele só pode aparecer quando eu seleciono o tipo de elemento código de barra
+<div class="bot-title">Bing</div>
+Para fazer com que a opção de selecionar o tamanho do código de barras só apareça quando o usuário selecionar a opção "Código de barras" no elemento de seleção d
+```python
+def ao_selecionar_tipo_elemento(evento):
+    if tipo_elemento.get() == "Texto":
+        rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+        tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+        rotulo_tamanho_codigo_barras.pack_forget()
+        tamanho_codigo_barras.pack_forget()
+    elif tipo_elemento.get() == "Código de barras":
+        rotulo_tamanho_fonte.pack_forget()
+        tamanho_fonte.pack_forget()
+        rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+        tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+Neste exemplo, a função ao_selecionar_tipo_elemento foi modificada para incluir uma verificação para a opção “Código de barras” no elemento de seleção do tipo de
+elemento. Quando essa opção é selecionada, os elementos relacionados ao tamanho da fonte são ocultados usando o método pack_forget, enquanto os elementos
+relacionados ao tamanho do código de barras são mostrados usando o método pack. Isso garante que apenas os elementos relevantes para a opção selecionada sejam exibidos
+na tela.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 
+Usuário
+quando eu clico no botão de criar elementos a janelinha para selecionar os elementos se abre, porem assim que ela se abre, mesmo sem ter selecionado nenhum tipo de
+elemento, na janelinha esta presente o tamanho da fonte e o tamanho do código de barras. Como ocultar eles quando a janela é aberta?
+Bing
+Para ocultar os elementos relacionados ao tamanho da fonte e ao tamanho do código de barras quando a janela é aberta, você pode modificar a função criar_elemento para
+não chamar o método pack nesses elementos imediatamente após criá-los. Em vez disso, você pode chamar o método pack nesses elementos apenas quando a opção
+relevante for selecionada no elemento de seleção do tipo de elemento. Aqui está um exemplo de como você pode fazer isso:
+def criar_elemento():
+# Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+# Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o rótulo para o tamanho da fonte
+    rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+# Cria o elemento de seleção para escolher o tamanho da fonte
+    tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+    tamanho_fonte.current(2)
+# Cria o rótulo para o tamanho do código de barras
+    rotulo_tamanho_codigo_barras = tk.Label(janela_criar_elemento, text="Tamanho do código de barras:")
+# Cria o elemento de seleção para escolher o tamanho do código de barras
+    tamanho_codigo_barras = ttk.Combobox(janela_criar_elemento, values=[1, 2, 3, 4, 5])
+    tamanho_codigo_barras.current(2)
+def ao_selecionar_tipo_elemento(evento):
+if tipo_elemento.get() == "Texto":
+            rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            rotulo_tamanho_codigo_barras.pack_forget()
+            tamanho_codigo_barras.pack_forget()
+elif tipo_elemento.get() == "Código de barras":
+            rotulo_tamanho_fonte.pack_forget()
+            tamanho_fonte.pack_forget()
+            rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+    tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo_elemento)
+# Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+# Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+elif tipo_elemento.get() == "Código de barras":
+            tamanho = tamanho_codigo_barras.get()
+            codigo = conteudo_elemento.get()
+            codigo_zpl = f"^FO100
+<div class="user-title">Usuário</div>
+você parou de escrever, pordeira continuar?
+<div class="bot-title">Bing</div>
+Desculpe, parece que minha resposta anterior foi cortada. Aqui está o código completo que eu estava tentando compartilhar com você:
+```python
+def criar_elemento():
+    # Cria a janela secundária
+    janela_criar_elemento = tk.Toplevel(janela_principal)
+    janela_criar_elemento.title("Criar elemento")
+    # Cria o rótulo para o tipo de elemento
+    rotulo_tipo_elemento = tk.Label(janela_criar_elemento, text="Tipo de elemento:")
+    rotulo_tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+    # Cria o elemento de seleção para escolher o tipo de elemento
+    tipo_elemento = ttk.Combobox(janela_criar_elemento, values=["Texto", "Código de barras"])
+    tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+    # Cria o rótulo para o tamanho da fonte
+    rotulo_tamanho_fonte = tk.Label(janela_criar_elemento, text="Tamanho da fonte:")
+    # Cria o elemento de seleção para escolher o tamanho da fonte
+    tamanho_fonte = ttk.Combobox(janela_criar_elemento, values=[8, 10, 12, 14, 16, 18, 20])
+    tamanho_fonte.current(2)
+    # Cria o rótulo para o tamanho do código de barras
+    rotulo_tamanho_codigo_barras = tk.Label(janela_criar_elemento, text="Tamanho do código de barras:")
+    # Cria o elemento de seleção para escolher o tamanho do código de barras
+    tamanho_codigo_barras = ttk.Combobox(janela_criar_elemento, values=[1, 2, 3, 4, 5])
+    tamanho_codigo_barras.current(2)
+    def ao_selecionar_tipo_elemento(evento):
+        if tipo_elemento.get() == "Texto":
+            rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+            rotulo_tamanho_codigo_barras.pack_forget()
+            tamanho_codigo_barras.pack_forget()
+        elif tipo_elemento.get() == "Código de barras":
+            rotulo_tamanho_fonte.pack_forget()
+            tamanho_fonte.pack_forget()
+            rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+            tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+    tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo_elemento)
+    # Cria o rótulo para o conteúdo do elemento
+    rotulo_conteudo_elemento = tk.Label(janela_criar_elemento, text="Conteúdo do elemento:")
+    rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+    # Cria o campo de entrada para o conteúdo do elemento
+    conteudo_elemento = tk.Entry(janela_criar_elemento)
+    conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+    def adicionar_elemento():
+        if tipo_elemento.get() == "Texto":
+            tamanho = tamanho_fonte.get()
+            texto = conteudo_elemento.get()
+            codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+            entrada_texto.insert(tk.END, codigo_zpl)
+        elif tipo_elemento.get() == "Código de barras":
+            tamanho = tamanho_codigo_barras.get()
+            codigo = conteudo_elemento.get()
+            codigo_zpl = f"^FO100
+<div class="user-title">Usuário</div>
+como ficaria apenas a def adicionar_elemento(): mesmo?
+<div class="bot-title">Bing</div>
+Aqui está a função `adicionar_elemento` que adiciona um elemento de texto ou código de barras à etiqueta com base nas opções selecionadas pelo usuário na janela 
+```python
+def adicionar_elemento():
+if tipo_elemento.get() == "Texto":
+        tamanho = tamanho_fonte.get()
+        texto = conteudo_elemento.get()
+        codigo_zpl = f"^FO50,50^A0,{tamanho}^FD{texto}^FS"
+        entrada_texto.insert(tk.END, codigo_zpl)
+elif tipo_elemento.get() == "Código de barras":
+        tamanho = tamanho_codigo_barras.get()
+        codigo = conteudo_elemento.get()
+        codigo_zpl = f"^FO100,100^BY{tamanho}^BUN,80,Y^FD{codigo}^FS"
+        entrada_texto.insert(tk.END, codigo_zpl)
+Essa função verifica se a opção “Texto” ou “Código de barras” foi selecionada no elemento de seleção do tipo de elemento e, em seguida, obtém o tamanho e o conteúdo do
+elemento digitado pelo usuário. Com base nessas informações, um código ZPL é criado para adicionar um elemento de texto ou código de barras à etiqueta. O código ZPL é
+inserido no campo de texto entrada_texto usando o método insert.
+Espero que isso ajude! Se você tiver mais alguma dúvida ou precisar de mais ajuda, não hesite em perguntar. 
+ 
+ 

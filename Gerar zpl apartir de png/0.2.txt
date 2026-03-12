@@ -1,0 +1,25 @@
+from PIL import Image, ImageOps
+
+def image_to_zpl(image_path, left_padding=0):
+    image = Image.open(image_path).convert('1')
+    # Adiciona pixels extras à esquerda da imagem
+    if left_padding > 0:
+        image = ImageOps.expand(image, (left_padding, 0, 0, 0))
+    width, height = image.size
+    # Certifique-se de que a largura da imagem é um múltiplo de 8
+    if width % 8 != 0:
+        new_width = ((width // 8) + 1) * 8
+        image = ImageOps.expand(image, (0, 0, new_width - width, 0))
+        width = new_width
+    data = []
+    for y in range(height):
+        row = []
+        for x in range(width):
+            row.append('1' if image.getpixel((x, y)) == 0 else '0')
+        data.append(''.join(row))
+    hex_data = ''.join(['{:X}'.format(int(x, 2)) for x in data])
+    zpl = "^XA^FO0,0^GFA,{},{},{},{}^FS^XZ".format(len(hex_data), len(hex_data) // 2, width // 8, hex_data)
+    return zpl
+
+zpl_code = image_to_zpl('barcode.png', left_padding=10)
+print(zpl_code)

@@ -1,0 +1,255 @@
+import tkinter as tk
+from tkinter import ttk
+import PIL
+from PIL import ImageTk, Image
+import re
+import barcode as  codigo_de_barras  # Importa o módulo de código de barras
+from barcode.writer import ImageWriter
+from io import BytesIO
+
+# Variáveis globais
+janela_redimensionada = False
+deslocamento_x = 21
+deslocamento_y = 20
+
+def atualizar_visualizacao():
+    """
+    Atualiza a visualização da etiqueta com base no código ZPL inserido no campo de texto.
+    """
+    global deslocamento_x, deslocamento_y
+
+    # Limpa o canvas e o dicionário de códigos de barras
+    for item in quadro.find_all():
+        if quadro.type(item) in ("text", "image"):
+            quadro.delete(item)
+    quadro.dados_codigo_de_barras = {}
+
+    # Obtém o código ZPL do campo de texto
+    codigo_zpl = campo_texto.get("1.0", tk.END)
+
+    # Analisa o código ZPL para extrair informações sobre os elementos
+    elementos = []
+    for correspondencia in re.finditer(r'\^FO(\d+),(\d+)\^A[^\^]+,(\d+),(\d+)\^FD([^\^]+)\^FS', codigo_zpl):
+        x, y, altura_fonte, largura_fonte, texto = correspondencia.groups()
+        elementos.append(('texto', int(x), int(y), int(altura_fonte), int(largura_fonte), texto))
+    for correspondencia in re.finditer(r'\^FO(\d+),(\d+)\^BY[^\^]+\^B[^\^]+\^FD([^\^]+)\^FS', codigo_zpl):
+        x, y, dados = correspondencia.groups()
+        elementos.append(('codigo_de_barras', int(x), int(y), dados))
+
+    # Cria objetos gráficos interativos para representar os elementos
+    for elemento in elementos:
+        if elemento[0] == 'texto':
+            # Se for um elemento de texto, cria um texto no canvas
+            _, x, y, altura_fonte, largura_fonte, texto = elemento
+            fator_escala = 0.73  # Fator de escala para o tamanho da fonte
+            item = quadro.create_text(x + deslocamento_x, y + deslocamento_y, text=texto, anchor=tk.NW, font=("Calibri Negrito", int(altura_fonte * fator_escala)))
+            quadro.tag_bind(item, "<ButtonPress-1>", ao_clicar_elemento)
+            quadro.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+        elif elemento[0] == 'codigo_de_barras':
+            # Se for um elemento de código de barras, cria uma imagem no canvas
+            _, x, y, dados = elemento
+            escritor = ImageWriter()
+            escritor.dpi = 300
+            escritor.altura_modulo = 5.0
+            upca = barcode.get('upca', dados, writer=escritor)
+            imagem = upca.render()
+            imagem.thumbnail((200, 200))
+            foto = ImageTk.PhotoImage(imagem)
+            item = quadro.create_image(x + deslocamento_x, y + deslocamento_y, image=foto, anchor=tk.NW)
+            quadro.dados_codigo_de_barras[item] = dados
+            quadro.tag_bind(item, "<ButtonPress-1>", ao_clicar_elemento)
+            quadro.tag_bind(item, "<B1-Motion>", ao_arrastar_elemento)
+
+            # Adiciona a imagem ao dicionário de imagens do canvas
+            if not hasattr(quadro, '_imagens'):
+                quadro._imagens = {}
+            quadro._imagens[item] = foto
+            print(f"Adicionando imagem ao dicionário: {item} -> {foto}")
+
+            # Armazena uma referência ao objeto PhotoImage para evitar que ele seja coletado pelo coletor de lixo
+            if not hasattr(quadro, '_fotos'):
+                quadro._fotos = []
+            quadro._fotos.append(foto)
+def ao_clicar_elemento(evento):
+    """
+    Armazena a posição atual do elemento quando é clicado.
+    """
+    # Armazena a posição atual do elemento
+    quadro.elemento_atual = quadro.find_withtag("current")
+    quadro.posicao_atual_x = evento.x
+    quadro.posicao_atual_y = evento.y
+
+def ao_arrastar_elemento(evento):
+    """
+    Move o elemento quando é arrastado, respeitando as travas de eixo e limites do retângulo.
+    """
+    rx1, ry1, rx2, ry2 = quadro.coords(retangulo)
+    # Obtém o valor selecionado no elemento de seleção
+    valor_incremento = int(valor_selecionado.get())
+
+    # Calcula as novas coordenadas do elemento com base no valor selecionado no elemento de seleção
+    x1, y1 = quadro.coords(quadro.elemento_atual)
+    x2 = evento.x
+    y2 = evento.y
+    x2 = round((x2 + 1) / valor_incremento) * valor_incremento
+    y2 = round((y2 + 1) / valor_incremento) * valor_incremento
+
+    # Verifica se as travas nos eixos X e Y estão ativadas
+    if trava_eixo_x.get():
+        x2 = x1
+    if trava_eixo_y.get():
+        y2 = y1
+
+    # Calcula o tamanho do elemento atual
+    tipo_elemento = quadro.type(quadro.elemento_atual)
+    if tipo_elemento == "text":
+        bbox = quadro.bbox(quadro.elemento_atual)
+        largura_elemento = bbox[2] - bbox[0]
+        altura_elemento = bbox[3] - bbox[1]
+    elif tipo_elemento == "image":
+        bbox = quadro.bbox(quadro.elemento_atual)
+        largura_elemento = bbox[2] - bbox[0]
+        altura_elemento = bbox[3] - bbox[1]
+    else:
+        largura_elemento = 0
+        altura_elemento = 0
+
+    # Verifica se as novas coordenadas do elemento, mais o tamanho do elemento, estão dentro dos limites do retângulo
+    if x2 < rx1:
+        x2 = rx1
+    if y2 < ry1:
+        y2 = ry1
+    if x2 + largura_elemento > rx2:
+        x2 = rx2 - largura_elemento
+    if y2 + altura_elemento > ry2:
+        y2 = ry2 - altura_elemento
+
+    # Move o elemento para a nova posição
+    quadro.coords(quadro.elemento_atual, x2, y2)
+
+    # Atualiza o campo informativo com as coordenadas atuais do elemento
+    rotulo_coordenadas.config(text=f"x: {x2 - deslocamento_x}, y: {y2 - deslocamento_y}")
+
+def aplicar_mudancas():
+    """
+    Aplica as mudanças realizadas na visualização de etiquetas ao código ZPL original.
+    """
+    # Obtém o código ZPL do campo de texto
+    codigo_zpl = campo_texto.get("1.0", tk.END)
+
+    for item in quadro.find_all():
+        if quadro.type(item) == "text":
+            x, y = quadro.coords(item)
+            texto = re.escape(quadro.itemcget(item, "text"))
+            novo_x = max(0, int(x) - deslocamento_x)
+            novo_y = max(0, int(y) - deslocamento_y)
+            # Se quiser adicionar 1 pixel ao novo_x e novo_y, descomente as duas linhas abaixo
+            #if novo_x != 0:
+            #    novo_x += 1
+            #if novo_y != 0:
+            #    novo_y += 1
+            codigo_zpl = re.sub(rf'(\^FO)\d+,\d+(\^A[^\^]+\^FD{texto}\^FS)', rf'\g<1>{novo_x},{novo_y}\g<2>', codigo_zpl)
+        elif quadro.type(item) == "image":
+            x, y = quadro.coords(item)
+            dados = re.escape(quadro.dados_codigo_de_barras[item])
+            novo_x = max(0, int(x) - deslocamento_x)
+            novo_y = max(0, int(y) - deslocamento_y)
+            # Se quiser adicionar 1 pixel ao novo_x e novo_y, descomente as duas linhas abaixo
+            #if novo_x != 0:
+            #    novo_x += 1
+            #if novo_y != 0:
+            #    novo_y += 1
+            codigo_zpl = re.sub(rf'(\^FO)\d+,\d+(\^[BY][^\^]+\^[B][^\^]+\^FD{dados}\^FS)', rf'\g<1>{novo_x},{novo_y}\g<2>', codigo_zpl)
+
+    # Atualiza o campo de texto com o novo código ZPL
+    campo_texto.delete("1.0", tk.END)
+    campo_texto.insert(tk.END, codigo_zpl)
+def ao_redimensionar(evento):
+    """
+    Atualiza o retângulo delimitador da área de visualização quando a janela é redimensionada.
+    """
+    global janela_redimensionada
+    # Verifica se o evento está sendo gerado pela janela principal
+    if evento.widget == janela_principal:
+        # Atualiza as coordenadas do retângulo
+        nova_largura = evento.width - 30
+        if not janela_redimensionada:
+            quadro.coords(retangulo, 10 + deslocamento_x, 10 + deslocamento_y, nova_largura, evento.height)
+            janela_redimensionada = True
+        else:
+            quadro.coords(retangulo, 21, 20, nova_largura, evento.height)
+
+# Cria a janela principal
+janela_principal = tk.Tk()
+janela_principal.title("Visualizador de Etiquetas ZPL")
+
+# Altera a largura e a altura da janela principal
+janela_principal.geometry("800x800")
+
+# Configura as linhas e colunas para se expandirem ou encolherem proporcionalmente à janela
+janela_principal.rowconfigure(0, weight=1)
+janela_principal.rowconfigure(6, weight=1)
+janela_principal.columnconfigure(0, weight=1, minsize=100)
+janela_principal.columnconfigure(1, weight=1, minsize=100)
+
+# Cria o campo de texto para entrada de código ZPL
+campo_texto = tk.Text(janela_principal, height=9)
+campo_texto.grid(row=0, column=0, columnspan=2, padx=20, sticky="nsew")
+
+# Cria um frame para conter os botões
+frame_botoes = tk.Frame(janela_principal)
+frame_botoes.grid(row=1, column=0, columnspan=2)
+
+# Cria o botão para atualizar a visualização da etiqueta
+botao_atualizar = tk.Button(frame_botoes, text="Atualizar", command=atualizar_visualizacao)
+botao_atualizar.pack(side=tk.LEFT, padx=5)
+
+# Cria o botão para aplicar as mudanças no código ZPL
+botao_aplicar = tk.Button(frame_botoes, text="Aplicar", command=aplicar_mudancas)
+botao_aplicar.pack(side=tk.LEFT, padx=5)
+
+# Cria um frame para conter os botões de trava
+frame_travas = tk.Frame(janela_principal)
+frame_travas.grid(row=2, column=0, columnspan=2)
+
+# Cria as variáveis para armazenar o estado das travas nos eixos X e Y
+trava_eixo_x = tk.BooleanVar()
+trava_eixo_y = tk.BooleanVar()
+
+# Cria os botões para habilitar as travas nos eixos X e Y
+botao_trava_x = tk.Checkbutton(frame_travas, text="Travar eixo X", variable=trava_eixo_x)
+botao_trava_x.pack(side=tk.LEFT, padx=5)
+
+botao_trava_y = tk.Checkbutton(frame_travas, text="Travar eixo Y", variable=trava_eixo_y)
+botao_trava_y.pack(side=tk.LEFT, padx=5)
+
+# Cria um frame para conter o rótulo e o elemento de seleção
+frame_selecao = tk.Frame(janela_principal)
+frame_selecao.grid(row=3, column=0, columnspan=2)
+
+# Cria o rótulo para o elemento de seleção
+rotulo_selecao = tk.Label(frame_selecao, text="Ajuste de posição:")
+rotulo_selecao.pack(side=tk.LEFT, padx=5)
+
+# Cria o elemento de seleção para escolher o valor pelo qual as coordenadas dos elementos devem ser incrementadas
+valor_selecionado = ttk.Combobox(frame_selecao, values=[1, 5, 10, 50])
+valor_selecionado.current(0)
+valor_selecionado.pack(side=tk.LEFT, padx=5)
+
+# Cria o campo informativo para exibir as coordenadas atuais do elemento
+rotulo_coordenadas = tk.Label(janela_principal, text="")
+rotulo_coordenadas.grid(row=4, column=0, columnspan=2, padx=5)
+
+# Cria o quadro (canvas) para exibir a imagem da etiqueta
+quadro = tk.Canvas(janela_principal)
+quadro.grid(row=6, column=0, columnspan=2, padx=5, sticky="nsew")
+quadro.dados_codigo_de_barras = {}
+
+# Adiciona um retângulo para delimitar a área de visualização da etiqueta
+retangulo = quadro.create_rectangle(10 + deslocamento_x, 10 + deslocamento_y, quadro.winfo_width() - 10 + deslocamento_x, quadro.winfo_height() - 10 + deslocamento_y)
+
+# Vincula o evento de redimensionamento da janela à função ao_redimensionar
+janela_principal.bind("<Configure>", ao_redimensionar)
+
+# Inicia o loop principal da janela
+janela_principal.mainloop()

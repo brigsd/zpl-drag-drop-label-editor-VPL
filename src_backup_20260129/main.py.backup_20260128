@@ -1,0 +1,1114 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+from tkinter import filedialog
+from PIL import ImageTk, Image
+import re
+import threading
+import requests
+import barcode
+from barcode.writer import ImageWriter
+from zpl_utils import image_to_zpl, redimensionar_imagem_codigo_barras, zpl_gfa_to_image, render_bitmap_text, render_scalable_text
+
+class ZPLVisualizerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root = root
+        self.root.title("Visualizador de Etiquetas ZPL")
+        self.root.geometry("1400x850") # Increased size for Labelary panel
+        
+        # State variables
+        self.tamanhos_codigo_barras = {}
+        self.janela_redimensionada = False
+        self.elementos_movidos = []
+        self.deslocamento_x = 0
+        self.deslocamento_y = 0
+        
+        # Canvas specific state
+        self.canvas_element_current = None
+        self.canvas_x_current = 0
+        self.canvas_y_current = 0
+        
+        # Tool state
+        self.ferramenta_selecionada = None  # None, 'texto', 'imagem', 'codigo_barras'
+        self.elemento_selecionado = None  # Canvas item ID of currently selected element
+        self.handles_redimensionar = []  # List of handle item IDs
+
+        self._setup_ui()
+        self._setup_bindings()
+        
+        # Initial ZPL Wrapper
+        if not self.entrada_texto.get("1.0", "end-1c").strip():
+            self.entrada_texto.insert("1.0", "^XA\n" + ("\n" * 12) + "^XZ")
+        
+        # Initial update
+        self.root.after(1, self.atualizar_visualizacao)
+
+    def _setup_ui(self):
+        # Configure main grid - sidebar on left, content on right
+        # Configure main grid - sidebar on left, content on right
+        self.root.columnconfigure(0, weight=0, minsize=80)  # Sidebar
+        self.root.columnconfigure(1, weight=1)  # Main content
+        self.root.columnconfigure(2, weight=1)  # Labelary Preview
+        self.root.rowconfigure(0, weight=1)
+        
+        # ===== SIDEBAR =====
+        self.sidebar = tk.Frame(self.root, bg="#f0f0f0", width=80)
+        self.sidebar.grid(row=0, column=0, sticky="ns", padx=2, pady=2)
+        self.sidebar.grid_propagate(False)
+        
+        # Sidebar title
+        tk.Label(self.sidebar, text="Ferramentas", bg="#f0f0f0", font=("Arial", 9, "bold")).pack(pady=5)
+        
+        # Tool buttons
+        self.botao_texto = tk.Button(self.sidebar, text="T", font=("Arial", 18, "bold"), width=3, height=1,
+                                      command=lambda: self.selecionar_ferramenta('texto'))
+        self.botao_texto.pack(pady=3)
+        tk.Label(self.sidebar, text="Texto", bg="#f0f0f0", font=("Arial", 8)).pack()
+        
+        self.botao_imagem = tk.Button(self.sidebar, text="🖼", font=("Arial", 16), width=3, height=1,
+                                       command=lambda: self.selecionar_ferramenta('imagem'))
+        self.botao_imagem.pack(pady=3)
+        tk.Label(self.sidebar, text="Imagem", bg="#f0f0f0", font=("Arial", 8)).pack()
+        
+        self.botao_codigo_barras = tk.Button(self.sidebar, text="||||", font=("Arial", 14), width=3, height=1,
+                                              command=lambda: self.selecionar_ferramenta('codigo_barras'))
+        self.botao_codigo_barras.pack(pady=3)
+        tk.Label(self.sidebar, text="Cód.Barras", bg="#f0f0f0", font=("Arial", 8)).pack()
+        
+        # Separator
+        tk.Frame(self.sidebar, height=2, bg="#cccccc").pack(fill=tk.X, pady=10, padx=5)
+        
+        # Deselect tool button
+        self.botao_selecao = tk.Button(self.sidebar, text="↖", font=("Arial", 16), width=3, height=1,
+                                        command=lambda: self.selecionar_ferramenta(None))
+        self.botao_selecao.pack(pady=3)
+        tk.Label(self.sidebar, text="Seleção", bg="#f0f0f0", font=("Arial", 8)).pack()
+        
+        # ===== MAIN CONTENT =====
+        self.main_frame = tk.Frame(self.root)
+        self.main_frame.grid(row=0, column=1, sticky="nsew")
+        self.main_frame.rowconfigure(5, weight=1)  # Canvas row expands
+        self.main_frame.columnconfigure(0, weight=1)
+
+        # Text Entry
+        self.entrada_texto = tk.Text(self.main_frame, height=15)
+        self.entrada_texto.grid(row=0, column=0, padx=10, pady=5, sticky="nsew")
+
+        # Buttons Frame
+        self.frame_botoes = tk.Frame(self.main_frame)
+        self.frame_botoes.grid(row=1, column=0, pady=5)
+
+
+        self.botao_atualizar = tk.Button(self.frame_botoes, text="Atualizar preview", command=self.atualizar_tudo)
+        self.botao_atualizar.pack(side=tk.LEFT, padx=5)
+        self.botao_atualizar.config(font=("Arial", 10, "bold"))
+
+        # Lock Controls Frame
+        self.frame_travas = tk.Frame(self.main_frame)
+        self.frame_travas.grid(row=2, column=0)
+
+        self.trava_eixo_x = tk.BooleanVar()
+        self.trava_eixo_y = tk.BooleanVar()
+
+        self.botao_trava_x = tk.Checkbutton(self.frame_travas, text="Travar eixo X", variable=self.trava_eixo_x)
+        self.botao_trava_x.pack(side=tk.LEFT, padx=5)
+
+        self.botao_trava_y = tk.Checkbutton(self.frame_travas, text="Travar eixo Y", variable=self.trava_eixo_y)
+        self.botao_trava_y.pack(side=tk.LEFT, padx=5)
+
+        # Snap/Position Frame
+        self.frame_elemento_selecao = tk.Frame(self.main_frame)
+        self.frame_elemento_selecao.grid(row=3, column=0)
+
+        self.rotulo_elemento_selecao = tk.Label(self.frame_elemento_selecao, text="Ajuste de posição:")
+        self.rotulo_elemento_selecao.pack(side=tk.LEFT, padx=5)
+
+        self.snap = ttk.Combobox(self.frame_elemento_selecao, values=[1, 5, 10, 50], width=5)
+        self.snap.current(0)
+        self.snap.pack(side=tk.LEFT, padx=5)
+
+        self.rotulo_coordenadas = tk.Label(self.main_frame, text="")
+        self.rotulo_coordenadas.grid(row=4, column=0, padx=5)
+
+        # Canvas
+        self.canvas = tk.Canvas(self.main_frame, bg="white")
+        self.canvas.grid(row=5, column=0, padx=5, pady=5, sticky="nsew")
+        self.canvas.dados_codigo_barras = {}
+        self.canvas.dados_texto_bitmap = {}
+        self.canvas.dados_zpl_posicao = {}
+        
+        # Viewport Rectangle
+        self.retangulo = self.canvas.create_rectangle(
+            self.deslocamento_x + 10, 
+            self.deslocamento_y + 10, 
+            600, 400,
+            outline="#cccccc"
+        )
+
+        # ===== LABELARY PANEL (RIGHT) =====
+        self.frame_labelary = tk.Frame(self.root, bg="#e0e0e0", bd=2, relief=tk.GROOVE)
+        self.frame_labelary.grid(row=0, column=2, sticky="nsew", padx=2, pady=2)
+        
+        # Header / Controls
+        self.frame_labelary_controls = tk.Frame(self.frame_labelary, bg="#e0e0e0")
+        self.frame_labelary_controls.pack(fill=tk.X, padx=5, pady=5)
+        
+        tk.Label(self.frame_labelary_controls, text="Labelary Preview", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(anchor=tk.W)
+        
+        # Config Grid
+        self.frame_config_api = tk.Frame(self.frame_labelary_controls, bg="#e0e0e0")
+        self.frame_config_api.pack(fill=tk.X, pady=5)
+        
+        # Row 1: DPI
+        tk.Label(self.frame_config_api, text="DPI:", bg="#e0e0e0").grid(row=0, column=0, padx=2, sticky=tk.E)
+        self.combo_dpi = ttk.Combobox(self.frame_config_api, values=["203", "300"], width=5, state="readonly")
+        self.combo_dpi.current(1) # Default 300
+        self.combo_dpi.grid(row=0, column=1, padx=2, sticky=tk.W)
+        
+        # Row 1: Unit
+        tk.Label(self.frame_config_api, text="Unidade:", bg="#e0e0e0").grid(row=0, column=2, padx=2, sticky=tk.E)
+        self.combo_unit = ttk.Combobox(self.frame_config_api, values=["mm", "cm", "inches"], width=7, state="readonly")
+        self.combo_unit.current(0) # Default mm
+        self.combo_unit.grid(row=0, column=3, padx=2, sticky=tk.W)
+        
+        # Row 2: Dimensions
+        tk.Label(self.frame_config_api, text="Largura:", bg="#e0e0e0").grid(row=1, column=0, padx=2, sticky=tk.E)
+        self.spin_width = tk.Spinbox(self.frame_config_api, from_=1, to=300, width=5)
+        self.spin_width.delete(0, "end")
+        self.spin_width.insert(0, "54") # Default 54mm
+        self.spin_width.grid(row=1, column=1, padx=2, sticky=tk.W)
+        
+        tk.Label(self.frame_config_api, text="Altura:", bg="#e0e0e0").grid(row=1, column=2, padx=2, sticky=tk.E)
+        self.spin_height = tk.Spinbox(self.frame_config_api, from_=1, to=300, width=5)
+        self.spin_height.delete(0, "end")
+        self.spin_height.insert(0, "38") # Default 38mm
+        self.spin_height.grid(row=1, column=3, padx=2, sticky=tk.W)
+        
+        # Preview Image Area
+        self.label_labelary_image = tk.Label(self.frame_labelary, bg="white", text="Clique em 'Atualizar preview' para carregar do Labelary API.")
+        self.label_labelary_image.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+
+    def _setup_bindings(self):
+        self.root.bind("<Configure>", self.ao_redimensionar)
+        # Canvas click for placing elements when tool selected
+        self.canvas.bind("<Button-1>", self.ao_clicar_canvas)
+        # Double-click for editing
+        self.canvas.bind("<Double-Button-1>", self.ao_duplo_clique_canvas)
+        
+        # Bind Paste Event
+        self.entrada_texto.bind("<<Paste>>", self.ao_colar_texto)
+
+    def ao_colar_texto(self, event):
+        try:
+            texto_colado = self.root.clipboard_get()
+        except tk.TclError:
+            return "break"
+
+        # Check for multiple labels
+        ocorr_xa = texto_colado.count("^XA")
+        ocorr_xz = texto_colado.count("^XZ")
+        
+        if ocorr_xa > 1 or ocorr_xz > 1:
+            resposta = messagebox.askyesno("Múltiplas Etiquetas", 
+                                           "Múltiplas etiquetas (Tags ^XA/^XZ) detectadas.\nDeseja mesclar tudo em uma única etiqueta?")
+            if resposta:
+                # Strip all wrapper tags
+                texto_limpo = texto_colado.replace("^XA", "").replace("^XZ", "").strip()
+                self.entrada_texto.insert(tk.INSERT, texto_limpo)
+                return "break"
+            else:
+                # Paste as is (user chose not to merge)
+                return None 
+        
+        # Single label or snippet with wrappers
+        if "^XA" in texto_colado or "^XZ" in texto_colado:
+             # Strip wrappers to insert into existing label
+             texto_colado = texto_colado.replace("^XA", "").replace("^XZ", "").strip()
+             self.entrada_texto.insert(tk.INSERT, texto_colado)
+             return "break"
+        
+        return None
+    
+    def selecionar_ferramenta(self, ferramenta):
+        """Select a tool and update cursor/button states."""
+        self.ferramenta_selecionada = ferramenta
+        
+        # Reset all button appearances
+        self.botao_texto.config(relief=tk.RAISED)
+        self.botao_imagem.config(relief=tk.RAISED)
+        self.botao_codigo_barras.config(relief=tk.RAISED)
+        self.botao_selecao.config(relief=tk.RAISED)
+        
+        # Highlight selected tool and change cursor
+        if ferramenta == 'texto':
+            self.botao_texto.config(relief=tk.SUNKEN)
+            self.canvas.config(cursor="crosshair")
+        elif ferramenta == 'imagem':
+            self.botao_imagem.config(relief=tk.SUNKEN)
+            self.canvas.config(cursor="crosshair")
+        elif ferramenta == 'codigo_barras':
+            self.botao_codigo_barras.config(relief=tk.SUNKEN)
+            self.canvas.config(cursor="crosshair")
+        else:
+            self.botao_selecao.config(relief=tk.SUNKEN)
+            self.canvas.config(cursor="")
+    
+    def ao_clicar_canvas(self, evento):
+        """Handle click on canvas - either place new element or select existing."""
+        # Check if clicking on a handle (don't process as canvas click)
+        current_tags = self.canvas.gettags("current")
+        if "handle" in current_tags:
+            return
+        
+        # Check if clicking on an existing element
+        item = self.canvas.find_withtag("current")
+        if item and item[0] != self.retangulo:
+            # Clicking on existing element - show resize handles and handle drag
+            self.mostrar_handles_redimensionar(item[0])
+            self.ao_pressionar_elemento(evento)
+            return
+        
+        # Clicked on empty space - hide handles
+        self.ocultar_handles()
+        
+        # If a tool is selected, place element at click position
+        if self.ferramenta_selecionada == 'texto':
+            self.criar_texto_em_posicao(evento.x, evento.y)
+        elif self.ferramenta_selecionada == 'imagem':
+            self.criar_imagem_em_posicao(evento.x, evento.y)
+        elif self.ferramenta_selecionada == 'codigo_barras':
+            self.criar_codigo_barras_em_posicao(evento.x, evento.y)
+    
+    def ao_duplo_clique_canvas(self, evento):
+        """Handle double-click on canvas - edit element."""
+        item = self.canvas.find_withtag("current")
+        if item and item[0] != self.retangulo:
+            self.editar_elemento(item[0])
+    
+    def criar_texto_em_posicao(self, x, y):
+        """Create a default text element at the given position."""
+        # Calculate ZPL coordinates (relative to canvas offset)
+        zpl_x = max(0, int(x) - self.deslocamento_x)
+        zpl_y = max(0, int(y) - self.deslocamento_y)
+        
+        # Generate ZPL with default text
+        zpl = f"^FO{zpl_x},{zpl_y}^A0,20,20^FDtexto^FS\n"
+        
+        # Insert before ^XZ if possible
+        pos_xz = self.entrada_texto.search("^XZ", "1.0", tk.END)
+        if pos_xz:
+            self.entrada_texto.insert(pos_xz, zpl)
+        else:
+            self.entrada_texto.insert(tk.END, zpl)
+        self.atualizar_visualizacao()
+        
+        # Switch to selection mode
+        self.selecionar_ferramenta(None)
+
+        # Trigger Labelary update
+        self.atualizar_tudo()
+    
+    def criar_imagem_em_posicao(self, x, y):
+        """Open file dialog and create image at given position."""
+        file_path = filedialog.askopenfilename(filetypes=[("Imagens PNG", "*.png")])
+        if file_path:
+            # Calculate ZPL coordinates
+            zpl_x = max(0, int(x) - self.deslocamento_x)
+            zpl_y = max(0, int(y) - self.deslocamento_y)
+            
+            # Generate ZPL for image
+            zpl_code = image_to_zpl(file_path, zpl_x, zpl_y)
+            
+            # Insert before ^XZ if possible
+            pos_xz = self.entrada_texto.search("^XZ", "1.0", tk.END)
+            if pos_xz:
+                self.entrada_texto.insert(pos_xz, zpl_code + "\n")
+            else:
+                self.entrada_texto.insert(tk.END, zpl_code + "\n")
+            self.atualizar_visualizacao()
+        
+        # Switch to selection mode
+        self.selecionar_ferramenta(None)
+
+        # Trigger Labelary update
+        self.atualizar_tudo()
+    
+    def criar_codigo_barras_em_posicao(self, x, y):
+        """Create a barcode element at the given position."""
+        zpl_x = max(0, int(x) - self.deslocamento_x)
+        zpl_y = max(0, int(y) - self.deslocamento_y)
+        
+        # Default barcode (UPC-A format, needs 11 digits)
+        zpl = f"^FO{zpl_x},{zpl_y}^BY2^BUN,80^FD12345678901^FS\n"
+        
+        # Insert before ^XZ if possible
+        pos_xz = self.entrada_texto.search("^XZ", "1.0", tk.END)
+        if pos_xz:
+            self.entrada_texto.insert(pos_xz, zpl)
+        else:
+            self.entrada_texto.insert(tk.END, zpl)
+        self.atualizar_visualizacao()
+        
+        # Switch to selection mode
+        self.selecionar_ferramenta(None)
+        
+        # Trigger Labelary update
+        self.atualizar_tudo()
+    
+    def editar_elemento(self, item):
+        """Open edit dialog for an element."""
+        # Check if it's a text element
+        if item in self.canvas.dados_texto_bitmap:
+            self.abrir_janela_edicao_texto(item)
+        elif self.canvas.type(item) == "text":
+            self.abrir_janela_edicao_texto(item)
+    
+    def abrir_janela_edicao_texto(self, item):
+        """Open text edit popup."""
+        janela = tk.Toplevel(self.root)
+        janela.title("Editar Texto")
+        janela.geometry("300x200")
+        janela.transient(self.root)
+        janela.grab_set()
+        
+        # Get current text
+        if item in self.canvas.dados_texto_bitmap:
+            texto_atual = self.canvas.dados_texto_bitmap[item]
+        else:
+            texto_atual = self.canvas.itemcget(item, "text")
+        
+        # Text field
+        tk.Label(janela, text="Texto:").pack(pady=5)
+        entrada_texto = tk.Entry(janela, width=30)
+        entrada_texto.insert(0, texto_atual)
+        entrada_texto.pack(pady=5)
+        
+        # Size fields
+        frame_tamanho = tk.Frame(janela)
+        frame_tamanho.pack(pady=5)
+        
+        tk.Label(frame_tamanho, text="Altura:").pack(side=tk.LEFT, padx=5)
+        entrada_altura = tk.Entry(frame_tamanho, width=5)
+        entrada_altura.insert(0, "20")
+        entrada_altura.pack(side=tk.LEFT, padx=5)
+        
+        tk.Label(frame_tamanho, text="Largura:").pack(side=tk.LEFT, padx=5)
+        entrada_largura = tk.Entry(frame_tamanho, width=5)
+        entrada_largura.insert(0, "20")
+        entrada_largura.pack(side=tk.LEFT, padx=5)
+        
+        def confirmar():
+            novo_texto = entrada_texto.get()
+            altura = entrada_altura.get() or "20"
+            largura = entrada_largura.get() or "20"
+            
+            # Get current position
+            x, y = self.canvas.coords(item)
+            zpl_x = max(0, int(x) - self.deslocamento_x)
+            zpl_y = max(0, int(y) - self.deslocamento_y)
+            
+            # Update ZPL - find and replace old text command
+            if item in self.canvas.dados_zpl_posicao:
+                match_start, match_end, _ = self.canvas.dados_zpl_posicao[item]
+                codigo_zpl = self.entrada_texto.get("1.0", tk.END)
+                new_zpl = f"^FO{zpl_x},{zpl_y}^A0,{altura},{largura}^FD{novo_texto}^FS"
+                codigo_zpl = codigo_zpl[:match_start] + new_zpl + codigo_zpl[match_end:]
+                self.entrada_texto.delete("1.0", tk.END)
+                self.entrada_texto.insert(tk.END, codigo_zpl)
+            
+            self.atualizar_visualizacao()
+            janela.destroy()
+        
+        tk.Button(janela, text="Confirmar", command=confirmar, font=("Arial", 10, "bold")).pack(pady=15)
+    
+    # ===== RESIZE HANDLES (REDIMENSIONAR) =====
+    
+    def mostrar_handles_redimensionar(self, item):
+        """Show resize handles around the selected element."""
+        self.ocultar_handles()  # Clear any existing handles
+        self.elemento_selecionado = item
+        
+        bbox = self.canvas.bbox(item)
+        if not bbox:
+            return
+        
+        x1, y1, x2, y2 = bbox
+        handle_size = 6
+        cx = (x1 + x2) // 2  # Center X
+        cy = (y1 + y2) // 2  # Center Y
+        
+        # Create handles at corners and midpoints
+        # Format: (x, y, position_name)
+        handle_positions = [
+            # Corners (uniform resize)
+            (x1, y1, 'nw'),  # Top-left
+            (x2, y2, 'se'),  # Bottom-right
+            (x2, y1, 'ne'),  # Top-right
+            (x1, y2, 'sw'),  # Bottom-left
+            # Midpoints (single-axis resize)
+            (cx, y1, 'n'),   # Top center (vertical only)
+            (cx, y2, 's'),   # Bottom center (vertical only)
+            (x1, cy, 'w'),   # Left center (horizontal only)
+            (x2, cy, 'e'),   # Right center (horizontal only)
+        ]
+        
+        for hx, hy, pos in handle_positions:
+            handle = self.canvas.create_rectangle(
+                hx - handle_size//2, hy - handle_size//2,
+                hx + handle_size//2, hy + handle_size//2,
+                fill="blue", outline="white", tags=("handle", f"handle_{pos}")
+            )
+            self.handles_redimensionar.append(handle)
+            
+            # Bind drag events to handles
+            self.canvas.tag_bind(handle, "<ButtonPress-1>", 
+                                 lambda e, p=pos: self.ao_pressionar_handle(e, p))
+            self.canvas.tag_bind(handle, "<B1-Motion>", 
+                                 lambda e, p=pos: self.ao_arrastar_handle(e, p))
+            self.canvas.tag_bind(handle, "<ButtonRelease-1>", self.ao_soltar_handle)
+    
+    def ocultar_handles(self):
+        """Remove all resize handles from canvas."""
+        for handle in self.handles_redimensionar:
+            self.canvas.delete(handle)
+        self.handles_redimensionar = []
+    
+    def ao_pressionar_handle(self, evento, posicao):
+        """Store initial state when handle is pressed."""
+        self.handle_posicao_atual = posicao
+        self.handle_x_inicial = evento.x
+        self.handle_y_inicial = evento.y
+        # Store original position for delta calculation in ao_soltar_handle
+        self.handle_x_original = evento.x
+        self.handle_y_original = evento.y
+        if self.elemento_selecionado:
+            self.bbox_inicial = self.canvas.bbox(self.elemento_selecionado)
+    
+    def ao_arrastar_handle(self, evento, posicao):
+        """Resize element while dragging handle."""
+        if not self.elemento_selecionado or not hasattr(self, 'bbox_inicial'):
+            return
+        
+        dx = evento.x - self.handle_x_inicial
+        dy = evento.y - self.handle_y_inicial
+        
+        # This is a simplified approach - for bitmap/images we would need to
+        # re-render at new size. For now, we'll update the visual feedback
+        # and recalculate on release.
+        
+        # Update handle positions to show resize preview
+        self.handle_x_inicial = evento.x
+        self.handle_y_inicial = evento.y
+    
+    def ao_soltar_handle(self, evento):
+        """Finalize resize when handle is released."""
+        if not self.elemento_selecionado:
+            return
+        
+        # Get new dimensions based on handle movement
+        if hasattr(self, 'bbox_inicial') and self.bbox_inicial and hasattr(self, 'handle_posicao_atual'):
+            old_x1, old_y1, old_x2, old_y2 = self.bbox_inicial
+            old_width = old_x2 - old_x1
+            old_height = old_y2 - old_y1
+            
+            # Determine resize mode based on handle position
+            pos = self.handle_posicao_atual
+            
+            # Calculate delta from original press position
+            dx = evento.x - getattr(self, 'handle_x_original', evento.x)
+            dy = evento.y - getattr(self, 'handle_y_original', evento.y)
+            
+            # For text elements, update font size in ZPL
+            if self.elemento_selecionado in self.canvas.dados_zpl_posicao:
+                match_start, match_end, elem_type = self.canvas.dados_zpl_posicao[self.elemento_selecionado]
+                
+                if elem_type == 'texto':
+                    # Get current text
+                    if self.elemento_selecionado in self.canvas.dados_texto_bitmap:
+                        texto = self.canvas.dados_texto_bitmap[self.elemento_selecionado]
+                    else:
+                        texto = self.canvas.itemcget(self.elemento_selecionado, "text")
+                    
+                    # Extract current ZPL dimensions from the original ZPL
+                    codigo_zpl = self.entrada_texto.get("1.0", tk.END)
+                    original_snippet = codigo_zpl[match_start:match_end]
+                    
+                    # Parse current height and width from ZPL
+                    match_dims = re.search(r'\^A\d*,(\d+),(\d+)', original_snippet)
+                    if match_dims:
+                        current_zpl_height = int(match_dims.group(1))
+                        current_zpl_width = int(match_dims.group(2))
+                    else:
+                        current_zpl_height = 20
+                        current_zpl_width = 20
+                    
+                    # Apply resize based on handle position
+                    if pos in ('n', 's'):
+                        # Vertical only - keep width, change height
+                        new_zpl_width = current_zpl_width
+                        new_zpl_height = max(10, current_zpl_height + dy if pos == 's' else current_zpl_height - dy)
+                    elif pos in ('e', 'w'):
+                        # Horizontal only - keep height, change width
+                        new_zpl_width = max(10, current_zpl_width + dx if pos == 'e' else current_zpl_width - dx)
+                        new_zpl_height = current_zpl_height
+                    else:
+                        # Corner handles - both dimensions
+                        if pos == 'se':
+                            new_zpl_width = max(10, current_zpl_width + dx)
+                            new_zpl_height = max(10, current_zpl_height + dy)
+                        elif pos == 'nw':
+                            new_zpl_width = max(10, current_zpl_width - dx)
+                            new_zpl_height = max(10, current_zpl_height - dy)
+                        elif pos == 'ne':
+                            new_zpl_width = max(10, current_zpl_width + dx)
+                            new_zpl_height = max(10, current_zpl_height - dy)
+                        else:  # sw
+                            new_zpl_width = max(10, current_zpl_width - dx)
+                            new_zpl_height = max(10, current_zpl_height + dy)
+                    
+                    x, y = self.canvas.coords(self.elemento_selecionado)
+                    zpl_x = max(0, int(x) - self.deslocamento_x)
+                    zpl_y = max(0, int(y) - self.deslocamento_y)
+                    
+                    # Update ZPL with new dimensions
+                    new_zpl = f"^FO{zpl_x},{zpl_y}^A0,{int(new_zpl_height)},{int(new_zpl_width)}^FD{texto}^FS"
+                    codigo_zpl = codigo_zpl[:match_start] + new_zpl + codigo_zpl[match_end:]
+                    self.entrada_texto.delete("1.0", tk.END)
+                    self.entrada_texto.insert(tk.END, codigo_zpl)
+                    
+                    self.atualizar_visualizacao()
+        
+        # Clear handles after resize
+        self.ocultar_handles()
+
+        self.ocultar_handles()
+    
+    def atualizar_tudo(self):
+        self.atualizar_visualizacao()
+        # Run Labelary in thread
+        threading.Thread(target=self.fetch_labelary_preview, daemon=True).start()
+
+    def fetch_labelary_preview(self):
+        zpl = self.entrada_texto.get("1.0", tk.END).strip()
+        if not zpl: return
+        
+        try:
+            dpi = self.combo_dpi.get()
+            width = float(self.spin_width.get())
+            height = float(self.spin_height.get())
+            unit = self.combo_unit.get()
+            
+            # Convert to inches for API if needed, but Labelary supports dpmm logic via URL
+            # Actually easier to use inches for URL: /v1/printers/{dpmm}/labels/{width}x{height}
+            # dpmm: 8dpmm (203dpi) or 12dpmm (300dpi) or 24dpmm (600dpi)
+            
+            dpmm = 8
+            if dpi == "300": dpmm = 12
+            elif dpi == "600": dpmm = 24
+            
+            # Convert dimensions to inches for the URL
+            if unit == "mm":
+                w_in = width / 25.4
+                h_in = height / 25.4
+            elif unit == "cm":
+                w_in = width / 2.54
+                h_in = height / 2.54
+            else:
+                w_in = width
+                h_in = height
+            
+            url = f"http://api.labelary.com/v1/printers/{dpmm}dpmm/labels/{w_in:.2f}x{h_in:.2f}/0/"
+            
+            response = requests.post(url, files={'file': zpl}, stream=True)
+            
+            if response.status_code == 200:
+                response.raw.decode_content = True
+                image = Image.open(response.raw)
+                
+                # Resize to fit panel if too big? 
+                # For now show as returned to reflect real size/quality
+                # Maybe scale down if huge for display?
+                # Max view size: ~500x800
+                
+                # Keep original API image
+                self._labelary_image_raw = image
+                
+                # Display
+                photo = ImageTk.PhotoImage(image)
+                
+                # Update UI in main thread
+                def update_ui():
+                    self.label_labelary_image.config(image=photo, text="")
+                    self.label_labelary_image.image = photo # Keep ref
+                
+                self.root.after(0, update_ui)
+                
+            else:
+                def show_err():
+                    self.label_labelary_image.config(image="", text=f"Erro API: {response.status_code}\n{response.text}")
+                self.root.after(0, show_err)
+                
+        except Exception as e:
+            def show_ex():
+                self.label_labelary_image.config(image="", text=f"Erro: {e}")
+            self.root.after(0, show_ex)
+
+    def atualizar_visualizacao(self):
+        codigo_zpl = self.entrada_texto.get("1.0", tk.END)
+
+        elementos = []
+        # Parse Text - Updated regex to capture font identifier (A0, A, etc.)
+        # ^A(font_id),h,w ... or ^A@ ... we focus on ^A(id),h,w
+        for match in re.finditer(r'\^FO(\d+),(\d+)\^A([A-Z0-9@]+),(\d+),(\d+)(\^FH)?\^FD([^\^]+)\^FS', codigo_zpl):
+            x, y, font_id, altura_fonte, largura_fonte, _, texto = match.groups()
+            elementos.append(('texto', int(x), int(y), font_id, int(altura_fonte), int(largura_fonte), texto, match.start(), match.end()))
+        
+        # Parse Barcode
+        for match in re.finditer(r'\^FO(\d+),(\d+)\^BY[^\^]+\^B[^\^]+\^FD([^\^]+)\^FS', codigo_zpl):
+            x, y, dados = match.groups()
+            elementos.append(('codigo_barras', int(x), int(y), dados, match.start(), match.end()))
+
+        # Parse GFA Images
+        # Matches ^FOx,y^GFA,len,len/2,width_bytes,data^FS (with or without comma after GFA)
+        for match in re.finditer(r'\^FO(\d+),(\d+)\^GFA,?(\d+),(\d+),(\d+),([A-Fa-f0-9\s]+)\^FS', codigo_zpl):
+            x, y, total_bytes, total_bytes_displayed, width_bytes, data = match.groups()
+            elementos.append(('imagem_gfa', int(x), int(y), int(width_bytes), data, match.start(), match.end()))
+
+        # Clear canvas items except rectangle (though find_all clears everything if not careful, original code cleared based on type)
+        # Original code cleared items with type "text" or "image".
+        for item in self.canvas.find_all():
+            if self.canvas.type(item) in ("text", "image"):
+                self.canvas.delete(item)
+        self.canvas.dados_codigo_barras = {}
+        self.canvas.dados_texto_bitmap = {}
+        self.canvas.dados_zpl_posicao = {}  # NEW: Store (match_start, match_end) for each item
+
+        for elemento in elementos:
+            if elemento[0] == 'texto':
+                _, x, y, font_id, altura_fonte, largura_fonte, texto, match_start, match_end = elemento
+                
+                # Check font type
+                image_rendered = None
+                
+                # Treat '0', '0N', '0R', '0B', '0I' etc as Scalable Font 0
+                is_scalable = font_id.startswith('0')
+                
+                if is_scalable:
+                    # Scalable font (Arial)
+                    image_rendered = render_scalable_text(texto, int(altura_fonte), int(largura_fonte))
+                else:
+                    # Bitmap font fallback (Pixel font)
+                    image_rendered = render_bitmap_text(texto, int(altura_fonte), int(largura_fonte))
+                
+                if image_rendered:
+                     fator_escala = 1 # Already scaled in engine
+                     foto = ImageTk.PhotoImage(image_rendered)
+                     item = self.canvas.create_image(x + self.deslocamento_x, y + self.deslocamento_y, image=foto, anchor=tk.NW)
+                     
+                     # Store ZPL position for unique identification
+                     self.canvas.dados_zpl_posicao[item] = (match_start, match_end, 'texto')
+                     
+                     # Tag bind for drag
+                     self.canvas.tag_bind(item, "<ButtonPress-1>", self.ao_pressionar_elemento)
+                     self.canvas.tag_bind(item, "<B1-Motion>", self.ao_arrastar_elemento)
+                     self.canvas.tag_bind(item, "<ButtonRelease-1>", self.ao_soltar_arrasto)
+                     
+                     # Store metadata on canvas item
+                     self.canvas.itemconfig(item, tags=("current", "texto_bitmap"))
+                     self.canvas.dados_texto_bitmap[item] = texto
+                     
+                     # Keep refs
+                     if not hasattr(self.canvas, '_imagens'): self.canvas._imagens = {}
+                     self.canvas._imagens[item] = foto
+                     if not hasattr(self.canvas, '_fotos'): self.canvas._fotos = []
+                     self.canvas._fotos.append(foto)
+
+                else:
+                    # Fallback to Tkinter Text (should happen rarely now)
+                    font_size = -int(altura_fonte)
+                    item = self.canvas.create_text(x + self.deslocamento_x, y + self.deslocamento_y, text=texto, anchor=tk.NW,
+                                              font=("Arial", font_size, "bold"))
+                    # Store ZPL position for unique identification
+                    self.canvas.dados_zpl_posicao[item] = (match_start, match_end, 'texto')
+                    self.canvas.tag_bind(item, "<ButtonPress-1>", self.ao_pressionar_elemento)
+                    self.canvas.tag_bind(item, "<B1-Motion>", self.ao_arrastar_elemento)
+                    self.canvas.tag_bind(item, "<ButtonRelease-1>", self.ao_soltar_arrasto)
+            elif elemento[0] == 'codigo_barras':
+                _, x, y, dados, match_start, match_end = elemento
+                escritor = ImageWriter()
+                escritor.dpi = 300
+                escritor.altura_modulo = 5.0
+                try:
+                    upca = barcode.get('upca', dados, writer=escritor)
+                    imagem = upca.render()
+                    foto = ImageTk.PhotoImage(imagem)
+                    item = self.canvas.create_image(x + self.deslocamento_x, y + self.deslocamento_y, image=foto, anchor=tk.NW)
+                    
+                    self.canvas.dados_codigo_barras[item] = dados
+                    # Store ZPL position for unique identification
+                    self.canvas.dados_zpl_posicao[item] = (match_start, match_end, 'codigo_barras')
+                    tamanho = self.tamanhos_codigo_barras.get(item, 1)
+                    imagem = redimensionar_imagem_codigo_barras(imagem, float(tamanho))
+                    foto = ImageTk.PhotoImage(imagem) # Update photo ref
+                    self.canvas.itemconfig(item, image=foto)
+                    
+                    self.canvas.tag_bind(item, "<ButtonPress-1>", self.ao_pressionar_elemento)
+                    self.canvas.tag_bind(item, "<B1-Motion>", self.ao_arrastar_elemento)
+                    self.canvas.tag_bind(item, "<ButtonRelease-1>", self.ao_soltar_arrasto)
+
+                    # Keep references
+                    if not hasattr(self.canvas, '_imagens'):
+                        self.canvas._imagens = {}
+                    self.canvas._imagens[item] = foto
+                    
+                    if not hasattr(self.canvas, '_fotos'):
+                        self.canvas._fotos = []
+                    self.canvas._fotos.append(foto)
+                except Exception as e:
+                    print(f"Erro ao gerar codigo de barras: {e}")
+            elif elemento[0] == 'imagem_gfa':
+                _, x, y, width_bytes, data, match_start, match_end = elemento
+                try:
+                    imagem = zpl_gfa_to_image(data, width_bytes)
+                    if imagem:
+                         # Invert colors? ZPL 1=black, PIL 1=white often.
+                         # Let's try to invert if it looks inverted.
+                         # Usually standard PIL '1' loaded from bytes: 0=black, 1=white.
+                         # ZPL: 1=black. So we might need to invert bits.
+                         # But ImageOps.invert/PIL logic is tricky with 1-bit.
+                         # Let's display as is first. User can report if inverted.
+                         
+                         foto = ImageTk.PhotoImage(imagem)
+                         item = self.canvas.create_image(x + self.deslocamento_x, y + self.deslocamento_y, image=foto, anchor=tk.NW)
+                         
+                         # Store ZPL position for unique identification
+                         self.canvas.dados_zpl_posicao[item] = (match_start, match_end, 'imagem_gfa')
+                         
+                         # Use uniform drag handler for images too (replaces arrastar_imagem_direto)
+                         self.canvas.tag_bind(item, "<ButtonPress-1>", self.ao_pressionar_elemento)
+                         self.canvas.tag_bind(item, "<B1-Motion>", self.ao_arrastar_elemento)
+                         self.canvas.tag_bind(item, "<ButtonRelease-1>", self.ao_soltar_arrasto)
+
+                         if not hasattr(self.canvas, '_imagens'): self.canvas._imagens = {}
+                         self.canvas._imagens[item] = foto
+                         
+                         if not hasattr(self.canvas, '_fotos'): self.canvas._fotos = []
+                         self.canvas._fotos.append(foto)
+                except Exception as e:
+                    print(f"Erro ao renderizar GFA: {e}")
+
+    def ao_pressionar_elemento(self, evento):
+        self.canvas_element_current = self.canvas.find_withtag("current")
+        self.canvas_x_current = evento.x
+        self.canvas_y_current = evento.y
+        
+        # Calculate offset from mouse to element top-left corner
+        if self.canvas_element_current:
+            coords = self.canvas.coords(self.canvas_element_current)
+            if coords:
+                self.arrasto_offset_x = evento.x - coords[0]
+                self.arrasto_offset_y = evento.y - coords[1]
+            else:
+                self.arrasto_offset_x = 0
+                self.arrasto_offset_y = 0
+        
+        # Initialize drag border rectangle
+        self.retangulo_arrasto = None
+
+    def ao_arrastar_elemento(self, evento):
+        if not self.canvas_element_current:
+            return
+        
+        # Hide resize handles during drag for cleaner visual
+        if self.handles_redimensionar:
+            self.ocultar_handles()
+            
+        rx1, ry1, rx2, ry2 = self.canvas.coords(self.retangulo)
+        valor_snap = int(self.snap.get())
+        
+        # Current element coords
+        coords = self.canvas.coords(self.canvas_element_current)
+        if not coords: return
+        x1, y1 = coords[:2]
+        
+        # Calculate new position maintaining grab offset
+        offset_x = getattr(self, 'arrasto_offset_x', 0)
+        offset_y = getattr(self, 'arrasto_offset_y', 0)
+        
+        x2 = evento.x - offset_x
+        y2 = evento.y - offset_y
+        
+        # Apply snap
+        x2 = round((x2 + 1) / valor_snap) * valor_snap
+        y2 = round((y2 + 1) / valor_snap) * valor_snap
+        
+        if self.trava_eixo_x.get():
+            x2 = x1
+        if self.trava_eixo_y.get():
+            y2 = y1
+
+        bbox = self.canvas.bbox(self.canvas_element_current)
+        largura_elemento = 0
+        altura_elemento = 0
+        if bbox:
+            largura_elemento = bbox[2] - bbox[0]
+            altura_elemento = bbox[3] - bbox[1]
+
+        if x2 < rx1: x2 = rx1
+        if y2 < ry1: y2 = ry1
+        if x2 + largura_elemento > rx2: x2 = rx2 - largura_elemento
+        if y2 + altura_elemento > ry2: y2 = ry2 - altura_elemento
+
+        # Move element
+        self.canvas.coords(self.canvas_element_current, x2, y2)
+        
+        # Update or create drag border rectangle
+        if hasattr(self, 'retangulo_arrasto') and self.retangulo_arrasto:
+            self.canvas.coords(self.retangulo_arrasto, x2, y2, x2 + largura_elemento, y2 + altura_elemento)
+        else:
+            self.retangulo_arrasto = self.canvas.create_rectangle(
+                x2, y2, x2 + largura_elemento, y2 + altura_elemento,
+                outline="black", width=1, dash=(2, 2), tags="arrasto_border"
+            )
+
+        x_relativo = x2 - rx1
+        y_relativo = y2 - ry1
+        self.rotulo_coordenadas.config(text=f"x: {x_relativo + 10}, y: {y_relativo + 10}")
+
+        self.rotulo_coordenadas.config(text=f"x: {x_relativo + 10}, y: {y_relativo + 10}")
+
+        if self.canvas_element_current[0] not in self.elementos_movidos:
+             self.elementos_movidos.append(self.canvas_element_current[0])
+    
+    def ao_soltar_arrasto(self, evento):
+        """Clean up drag border and update ZPL automatically."""
+        if hasattr(self, 'retangulo_arrasto') and self.retangulo_arrasto:
+            self.canvas.delete(self.retangulo_arrasto)
+            self.retangulo_arrasto = None
+            
+        # Update ZPL position automatically on release
+        if self.elementos_movidos:
+            self.aplicar_mudancas()
+            self.atualizar_visualizacao()  # Refresh canvas and indices
+
+    def aplicar_mudancas(self):
+        codigo_zpl = self.entrada_texto.get("1.0", tk.END)
+        
+        # Collect all updates with their positions
+        # Format: [(match_start, match_end, new_coords_str, element_type), ...]
+        updates = []
+        
+        for item in self.elementos_movidos:
+            if item not in self.canvas.dados_zpl_posicao:
+                continue
+                
+            match_start, match_end, element_type = self.canvas.dados_zpl_posicao[item]
+            x, y = self.canvas.coords(item)
+            novo_x = max(0, int(x) - self.deslocamento_x)
+            novo_y = max(0, int(y) - self.deslocamento_y)
+            
+            # Get the original ZPL snippet for this element
+            original_snippet = codigo_zpl[match_start:match_end]
+            
+            # Replace only the ^FO coordinates in this specific snippet
+            new_snippet = re.sub(r'\^FO\d+,\d+', f'^FO{novo_x},{novo_y}', original_snippet, count=1)
+            
+            updates.append((match_start, match_end, new_snippet))
+        
+        # Sort by position descending to avoid offset issues when replacing
+        updates.sort(key=lambda x: x[0], reverse=True)
+        
+        # Apply updates from end to start
+        for match_start, match_end, new_snippet in updates:
+            codigo_zpl = codigo_zpl[:match_start] + new_snippet + codigo_zpl[match_end:]
+
+        self.entrada_texto.delete("1.0", tk.END)
+        self.entrada_texto.insert(tk.END, codigo_zpl)
+
+        self.elementos_movidos = []
+
+    def arrastar_imagem_direto(self, evento):
+        # Specific handler for imported images (direct ZPL update)
+        if self.canvas.type(self.canvas_element_current) == "image":
+             # Same logic as VPL.py lines 408-453
+             x, y = self.canvas.coords(self.canvas_element_current)
+             x += evento.x - self.canvas_x_current
+             y += evento.y - self.canvas_y_current
+             
+             if self.trava_eixo_x.get(): x = self.canvas.coords(self.canvas_element_current)[0]
+             if self.trava_eixo_y.get(): y = self.canvas.coords(self.canvas_element_current)[1]
+
+             rx1, ry1, rx2, ry2 = self.canvas.coords(self.retangulo)
+             bbox = self.canvas.bbox(self.canvas_element_current)
+             w = bbox[2] - bbox[0]
+             h = bbox[3] - bbox[1]
+
+             if x < rx1: x = rx1
+             if y < ry1: y = ry1
+             if x + w > rx2: x = rx2 - w
+             if y + h > ry2: y = ry2 - h
+
+             self.canvas.coords(self.canvas_element_current, x, y)
+             self.canvas_x_current = evento.x
+             self.canvas_y_current = evento.y
+
+             # Update ZPL directly
+             codigo_zpl = self.entrada_texto.get("1.0", tk.END)
+             # Regex for GFA (image)
+             novo_codigo_zpl = re.sub(r'(\^FO)\d+,\d+(\^GFA[^\^]+\^FS)', rf'\g<1>{int(x)},{int(y)}\g<2>', codigo_zpl)
+             self.entrada_texto.delete("1.0", tk.END)
+             self.entrada_texto.insert(tk.END, novo_codigo_zpl)
+
+    def criar_elemento(self):
+        janela = tk.Toplevel(self.root)
+        janela.title("Criar elemento")
+        janela.geometry("400x300")
+        
+        tk.Label(janela, text="Tipo de elemento:").pack(side=tk.TOP, padx=5, pady=5)
+        tipo_elemento = ttk.Combobox(janela, values=["Texto", "Código de barras"])
+        tipo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+
+        rotulo_tamanho_fonte = tk.Label(janela, text="Tamanho da fonte:")
+        tamanho_fonte = ttk.Combobox(janela, values=[16, 18, 20, 30, 40, 50, 60])
+        tamanho_fonte.current(2)
+
+        rotulo_tamanho_codigo_barras = tk.Label(janela, text="Tamanho do código de barras:")
+        tamanho_codigo_barras = ttk.Combobox(janela, values=[1, 2, 3, 4, 5])
+        tamanho_codigo_barras.current(2)
+
+        rotulo_formato_codigo_barras = tk.Label(janela, text="Formato do código de barras:")
+        formato_codigo_barras = ttk.Combobox(janela, values=["UPC-A", "EAN-13"])
+        formato_codigo_barras.current(0)
+
+        rotulo_conteudo_elemento = tk.Label(janela, text="Conteúdo do elemento:")
+        rotulo_conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+        
+        conteudo_elemento = tk.Entry(janela, width=50)
+        conteudo_elemento.pack(side=tk.TOP, padx=5, pady=5)
+        
+        botao_adicionar = tk.Button(janela, text="Adicionar elemento", state=tk.DISABLED)
+        botao_adicionar.pack(side=tk.BOTTOM, padx=5, pady=5)
+
+        def atualizar_estado_botao(*args):
+             if (tipo_elemento.get() == "Texto" and conteudo_elemento.get() and tamanho_fonte.get()) or \
+                (tipo_elemento.get() == "Código de barras" and conteudo_elemento.get() and tamanho_codigo_barras.get()):
+                 botao_adicionar.config(state=tk.NORMAL)
+             else:
+                 botao_adicionar.config(state=tk.DISABLED)
+
+        def ao_selecionar_tipo(event):
+            atualizar_estado_botao()
+            if tipo_elemento.get() == "Texto":
+                rotulo_tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+                tamanho_fonte.pack(side=tk.TOP, padx=5, pady=5)
+                rotulo_tamanho_codigo_barras.pack_forget()
+                tamanho_codigo_barras.pack_forget()
+                rotulo_formato_codigo_barras.pack_forget()
+                formato_codigo_barras.pack_forget()
+            elif tipo_elemento.get() == "Código de barras":
+                rotulo_tamanho_fonte.pack_forget()
+                tamanho_fonte.pack_forget()
+                rotulo_tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+                tamanho_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+                rotulo_formato_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+                formato_codigo_barras.pack(side=tk.TOP, padx=5, pady=5)
+
+        tipo_elemento.bind("<<ComboboxSelected>>", ao_selecionar_tipo)
+        conteudo_elemento.bind("<KeyRelease>", atualizar_estado_botao)
+        tamanho_fonte.bind("<<ComboboxSelected>>", atualizar_estado_botao)
+        tamanho_codigo_barras.bind("<<ComboboxSelected>>", atualizar_estado_botao)
+        formato_codigo_barras.bind("<<ComboboxSelected>>", atualizar_estado_botao)
+
+        def adicionar():
+            if tipo_elemento.get() == "Texto":
+                t = tamanho_fonte.get()
+                txt = conteudo_elemento.get()
+                zpl = f"^FO200,200^A0,{t},{t}^FD{txt}^FS"
+                
+                # Insert before ^XZ if possible
+                pos_xz = self.entrada_texto.search("^XZ", "1.0", tk.END)
+                if pos_xz:
+                    self.entrada_texto.insert(pos_xz, zpl + "\n")
+                else:
+                    self.entrada_texto.insert(tk.END, zpl + "\n")
+            elif tipo_elemento.get() == "Código de barras":
+                t = tamanho_codigo_barras.get()
+                cod = conteudo_elemento.get()
+                fmt = formato_codigo_barras.get()
+                
+                # Logic to render and add to canvas/ZPL
+                # VPL.py duplicates logic here (rendering image + adding ZPL).
+                # Simplified: Just add ZPL and let update_preview handle rendering?
+                # VPL.py line 313 adds ZPL. Line 320 renders image specifically for "previewing" immediately?
+                # Actually VPL.py does both: adds ZPL AND directly adds image to canvas.
+                # Adding ZPL is enough if we call `atualizar_visualizacao` after.
+                
+                if fmt == "UPC-A":
+                    zpl = f"^FO200,200^BY{t}^BUN,80^FD{cod}^FS"
+                elif fmt == "EAN-13":
+                    zpl = f"^FO200,200^BY{t}^BEN,80^FD{cod}^FS"
+                
+                # Insert before ^XZ if possible
+                pos_xz = self.entrada_texto.search("^XZ", "1.0", tk.END)
+                if pos_xz:
+                    self.entrada_texto.insert(pos_xz, zpl + "\n")
+                else:
+                    self.entrada_texto.insert(tk.END, zpl + "\n")
+
+            janela.destroy()
+            self.atualizar_tudo()
+ 
+        botao_adicionar.config(command=adicionar)
+
+    def importar_imagem(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Imagens PNG", "*.png")])
+        if file_path:
+            try:
+                imagem = Image.open(file_path)
+                imagem.thumbnail((200, 200))
+                foto = ImageTk.PhotoImage(imagem)
+                
+                # Create image on canvas
+                item = self.canvas.create_image(150, 150, image=foto, anchor=tk.NW)
+                
+                # Bind events - Special handler for imported images
+                self.canvas.tag_bind(item, "<ButtonPress-1>", self.ao_pressionar_elemento)
+                self.canvas.tag_bind(item, "<B1-Motion>", self.arrastar_imagem_direto)
+
+                # Convert to ZPL and insert
+                zpl_code = image_to_zpl(file_path)
+                
+                # Insert before ^XZ if possible
+                pos_xz = self.entrada_texto.search("^XZ", "1.0", tk.END)
+                if pos_xz:
+                    self.entrada_texto.insert(pos_xz, zpl_code + "\n")
+                else:
+                    self.entrada_texto.insert(tk.END, zpl_code + "\n")
+                
+                # Keep ref
+                if not hasattr(self.canvas, '_imagens'): self.canvas._imagens = {}
+                self.canvas._imagens[item] = foto
+
+            except Exception as e:
+                print(f"Erro ao abrir imagem: {e}")
+
+
+    def ao_redimensionar(self, evento):
+        if evento.widget == self.root:
+            # Simplified: Update rectangle based on canvas width
+            canvas_width = self.canvas.winfo_width()
+            canvas_height = self.canvas.winfo_height()
+            
+            if canvas_width > 1 and canvas_height > 1:
+                 # Update viewport rect to match canvas size minus margins
+                 self.canvas.coords(self.retangulo, 
+                                    self.deslocamento_x + 10, 
+                                    self.deslocamento_y + 10, 
+                                    self.deslocamento_x + canvas_width - 10, 
+                                    self.deslocamento_y + canvas_height - 10)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ZPLVisualizerApp(root)
+    root.mainloop()

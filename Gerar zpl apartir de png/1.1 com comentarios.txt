@@ -1,0 +1,62 @@
+from PIL import Image
+
+def image_to_zpl(image_path, offset_x=0, offset_y=0):
+    image = Image.open(image_path).convert('1')
+    # Desloca os pixels da imagem
+    if offset_x != 0 or offset_y != 0:
+        image = image.transform(image.size, Image.AFFINE, (1, 0, offset_x, 0, 1, offset_y))
+    width, height = image.size
+
+    # Verifica se a largura da imagem é um múltiplo de 8
+    if width % 8 != 0:
+        # Reduz as proporções da imagem até que a largura seja um múltiplo de 8
+        while width % 8 != 0:
+            width -= 1
+            height -= 1
+        image = image.resize((width, height))
+
+    # Cria uma lista vazia chamada `data` para armazenar os dados da imagem
+    data = []
+    # Inicia um loop `for` para iterar sobre cada linha da imagem
+    for y in range(height):
+        # Cria uma lista vazia chamada `row` para armazenar os dados de uma linha da imagem
+        row = []
+        # Inicia um loop `for` interno para iterar sobre cada coluna da imagem
+        for x in range(width):
+            # Obtém o valor do pixel na posição `(x, y)` da imagem usando a função `getpixel` da biblioteca PIL
+            # Se o valor do pixel for 0 (preto), adiciona o caractere `'1'` à lista `row`
+            # Caso contrário, adiciona o caractere `'0'`
+            row.append('1' if image.getpixel((x, y)) == 0 else '0')
+        # Ao final do loop interno, junta todos os caracteres da lista `row` em uma única string usando a função `join`
+        # Adiciona a string resultante à lista `data`
+        data.append(''.join(row))
+    # Após o loop externo, converte cada string binária na lista `data` em um valor hexadecimal usando a função `int` com base 2 e a função de formatação de string `{:X}`
+    # Junta todos os valores hexadecimais em uma única string usando a função `join`
+    hex_data = ''.join(['{:X}'.format(int(x, 2)) for x in data])
+    # Gera o código ZPL usando os dados hexadecimais e as dimensões da imagem
+    zpl = "^XA^FO50,50^GFA,{},{},{},{}^FS^XZ".format(len(hex_data), len(hex_data) // 2, width // 8, hex_data)
+    # Retorna o código ZPL gerado pela função
+    return zpl
+
+# Define a função `altera_8_para_0` que recebe como parâmetro um código ZPL
+def altera_8_para_0(codigo_zpl):
+    # Converte o código ZPL em uma lista de caracteres
+    codigo_zpl = list(codigo_zpl)
+    # Inicia um loop `for` para iterar sobre cada caractere do código ZPL
+    for i in range(0, len(codigo_zpl), 1):
+        # Verifica se o caractere atual é '8'
+        if codigo_zpl[i] == '8':
+            # Se for, altera o caractere para '0'
+            codigo_zpl[i] = '0'
+    # Junta todos os caracteres da lista em uma única string usando a função `join`
+    # Retorna o código ZPL atualizado
+    return ''.join(codigo_zpl)
+
+# Chama a função `image_to_zpl` com o caminho da imagem `'OIP.jpg'` e os valores de deslocamento `offset_x=-1` e `offset_y=0`
+# Armazena o código ZPL resultante na variável `zpl_code`
+zpl_code = image_to_zpl('OIP.jpg', offset_x=-1, offset_y=0)
+# Chama a função `altera_8_para_0` com o código ZPL gerado
+# Armazena o código ZPL atualizado na variável `zpl_code_atualizado`
+zpl_code_atualizado = altera_8_para_0(zpl_code)
+# Imprime o código ZPL atualizado na tela
+print(zpl_code_atualizado)
